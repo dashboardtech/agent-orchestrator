@@ -8,7 +8,7 @@ import type { Command } from "commander";
 async function prompt(
   rl: ReturnType<typeof createInterface>,
   question: string,
-  defaultValue?: string
+  defaultValue?: string,
 ): Promise<string> {
   const suffix = defaultValue ? ` ${chalk.dim(`(${defaultValue})`)}` : "";
   const answer = await rl.question(`${question}${suffix}: `);
@@ -40,45 +40,32 @@ export function registerInit(program: Command): void {
         const dataDir = await prompt(
           rl,
           "Data directory (session metadata)",
-          "~/.agent-orchestrator"
+          "~/.agent-orchestrator",
         );
-        const worktreeDir = await prompt(
-          rl,
-          "Worktree directory",
-          "~/.worktrees"
-        );
-        const port = parseInt(
-          await prompt(rl, "Dashboard port", "3000"),
-          10
-        );
+        const worktreeDir = await prompt(rl, "Worktree directory", "~/.worktrees");
+        const portStr = await prompt(rl, "Dashboard port", "3000");
+        const port = parseInt(portStr, 10);
+        if (isNaN(port) || port < 1 || port > 65535) {
+          console.error(chalk.red("Invalid port number. Must be 1-65535."));
+          rl.close();
+          process.exit(1);
+        }
 
         // Default plugins
         console.log(chalk.bold("\n  Default Plugins\n"));
         const runtime = await prompt(rl, "Runtime (tmux, process)", "tmux");
-        const agent = await prompt(
-          rl,
-          "Agent (claude-code, codex, aider)",
-          "claude-code"
-        );
-        const workspace = await prompt(
-          rl,
-          "Workspace (worktree, clone)",
-          "worktree"
-        );
+        const agent = await prompt(rl, "Agent (claude-code, codex, aider)", "claude-code");
+        const workspace = await prompt(rl, "Workspace (worktree, clone)", "worktree");
         const notifiersStr = await prompt(
           rl,
           "Notifiers (comma-separated: desktop, slack, webhook)",
-          "desktop"
+          "desktop",
         );
         const notifiers = notifiersStr.split(",").map((s) => s.trim());
 
         // First project
         console.log(chalk.bold("\n  First Project\n"));
-        const projectId = await prompt(
-          rl,
-          "Project ID (short name, e.g. my-app)",
-          ""
-        );
+        const projectId = await prompt(rl, "Project ID (short name, e.g. my-app)", "");
 
         const config: Record<string, unknown> = {
           dataDir,
@@ -89,21 +76,9 @@ export function registerInit(program: Command): void {
         };
 
         if (projectId) {
-          const repo = await prompt(
-            rl,
-            "GitHub repo (owner/repo)",
-            ""
-          );
-          const path = await prompt(
-            rl,
-            "Local path to repo",
-            `~/${projectId}`
-          );
-          const defaultBranch = await prompt(
-            rl,
-            "Default branch",
-            "main"
-          );
+          const repo = await prompt(rl, "GitHub repo (owner/repo)", "");
+          const path = await prompt(rl, "Local path to repo", `~/${projectId}`);
+          const defaultBranch = await prompt(rl, "Default branch", "main");
 
           (config.projects as Record<string, unknown>)[projectId] = {
             repo,

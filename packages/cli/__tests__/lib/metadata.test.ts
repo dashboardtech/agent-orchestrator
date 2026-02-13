@@ -1,6 +1,13 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { mkdtempSync, mkdirSync, writeFileSync, existsSync, readFileSync, readdirSync } from "node:fs";
-import { rmSync } from "node:fs";
+import {
+  mkdtempSync,
+  mkdirSync,
+  writeFileSync,
+  existsSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+} from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import {
@@ -29,9 +36,7 @@ describe("getSessionDir", () => {
   });
 
   it("handles nested data dirs", () => {
-    expect(getSessionDir("/home/user/.ao", "backend")).toBe(
-      "/home/user/.ao/backend-sessions"
-    );
+    expect(getSessionDir("/home/user/.ao", "backend")).toBe("/home/user/.ao/backend-sessions");
   });
 });
 
@@ -44,7 +49,7 @@ describe("readMetadata", () => {
     const file = join(tmpDir, "session-1");
     writeFileSync(
       file,
-      "worktree=/home/user/.worktrees/app/session-1\nbranch=feat/INT-123\nstatus=working\nissue=INT-123\n"
+      "worktree=/home/user/.worktrees/app/session-1\nbranch=feat/INT-123\nstatus=working\nissue=INT-123\n",
     );
     const meta = readMetadata(file);
     expect(meta).not.toBeNull();
@@ -72,10 +77,7 @@ describe("readMetadata", () => {
 
   it("handles PR URLs with embedded numbers", () => {
     const file = join(tmpDir, "session-4");
-    writeFileSync(
-      file,
-      "pr=https://github.com/org/repo/pull/42\nbranch=feat/fix\n"
-    );
+    writeFileSync(file, "pr=https://github.com/org/repo/pull/42\nbranch=feat/fix\n");
     const meta = readMetadata(file);
     expect(meta!.pr).toBe("https://github.com/org/repo/pull/42");
   });
@@ -188,20 +190,10 @@ describe("findSessionForIssue", () => {
   it("finds session by issue ID match", async () => {
     const sessionDir = join(tmpDir, "sessions");
     mkdirSync(sessionDir);
-    writeFileSync(
-      join(sessionDir, "app-1"),
-      "branch=feat/INT-100\nissue=INT-100\n"
-    );
-    writeFileSync(
-      join(sessionDir, "app-2"),
-      "branch=feat/INT-200\nissue=INT-200\n"
-    );
+    writeFileSync(join(sessionDir, "app-1"), "branch=feat/INT-100\nissue=INT-100\n");
+    writeFileSync(join(sessionDir, "app-2"), "branch=feat/INT-200\nissue=INT-200\n");
 
-    const result = await findSessionForIssue(
-      sessionDir,
-      "INT-200",
-      ["app-1", "app-2"]
-    );
+    const result = await findSessionForIssue(sessionDir, "INT-200", ["app-1", "app-2"]);
     expect(result).toBe("app-2");
   });
 
@@ -210,11 +202,7 @@ describe("findSessionForIssue", () => {
     mkdirSync(sessionDir);
     writeFileSync(join(sessionDir, "app-1"), "branch=main\nissue=INT-100\n");
 
-    const result = await findSessionForIssue(
-      sessionDir,
-      "INT-999",
-      ["app-1"]
-    );
+    const result = await findSessionForIssue(sessionDir, "INT-999", ["app-1"]);
     expect(result).toBeNull();
   });
 
@@ -223,11 +211,7 @@ describe("findSessionForIssue", () => {
     mkdirSync(sessionDir);
     writeFileSync(join(sessionDir, "app-1"), "issue=int-100\n");
 
-    const result = await findSessionForIssue(
-      sessionDir,
-      "INT-100",
-      ["app-1"]
-    );
+    const result = await findSessionForIssue(sessionDir, "INT-100", ["app-1"]);
     expect(result).toBe("app-1");
   });
 
@@ -238,11 +222,7 @@ describe("findSessionForIssue", () => {
     writeFileSync(join(sessionDir, "app-2"), "issue=INT-200\n");
 
     // app-2 is NOT in tmux sessions list
-    const result = await findSessionForIssue(
-      sessionDir,
-      "INT-200",
-      ["app-1"]
-    );
+    const result = await findSessionForIssue(sessionDir, "INT-200", ["app-1"]);
     expect(result).toBeNull();
   });
 });

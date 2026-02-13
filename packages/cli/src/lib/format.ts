@@ -13,9 +13,7 @@ export function banner(title: string): string {
   const line = "═".repeat(76);
   return [
     chalk.dim(`╔${line}╗`),
-    chalk.dim("║") +
-      chalk.bold.cyan(` ${title}`.padEnd(76)) +
-      chalk.dim("║"),
+    chalk.dim("║") + chalk.bold.cyan(` ${title}`.padEnd(76)) + chalk.dim("║"),
     chalk.dim(`╚${line}╝`),
   ].join("\n");
 }

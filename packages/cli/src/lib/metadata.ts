@@ -20,10 +20,7 @@ export function readMetadata(filePath: string): Partial<SessionMetadata> | null 
   return meta as Partial<SessionMetadata>;
 }
 
-export function writeMetadata(
-  filePath: string,
-  meta: Partial<SessionMetadata>
-): void {
+export function writeMetadata(filePath: string, meta: Partial<SessionMetadata>): void {
   mkdirSync(join(filePath, ".."), { recursive: true });
   const lines = Object.entries(meta)
     .filter(([, v]) => v !== undefined && v !== null)
@@ -31,11 +28,7 @@ export function writeMetadata(
   writeFileSync(filePath, lines.join("\n") + "\n");
 }
 
-export function updateMetadataField(
-  filePath: string,
-  key: string,
-  value: string
-): void {
+export function updateMetadataField(filePath: string, key: string, value: string): void {
   if (!existsSync(filePath)) return;
   const content = readFileSync(filePath, "utf-8");
   const lines = content.split("\n");
@@ -53,10 +46,7 @@ export function updateMetadataField(
   writeFileSync(filePath, updated.filter((l) => l !== "").join("\n") + "\n");
 }
 
-export function archiveMetadata(
-  sessionDir: string,
-  sessionName: string
-): void {
+export function archiveMetadata(sessionDir: string, sessionName: string): void {
   const metaFile = join(sessionDir, sessionName);
   if (!existsSync(metaFile)) return;
   const archiveDir = join(sessionDir, "archive");
@@ -65,9 +55,7 @@ export function archiveMetadata(
   renameSync(metaFile, join(archiveDir, `${sessionName}_${timestamp}`));
 }
 
-export async function listSessionFiles(
-  sessionDir: string
-): Promise<string[]> {
+export async function listSessionFiles(sessionDir: string): Promise<string[]> {
   if (!existsSync(sessionDir)) return [];
   const entries = await readdir(sessionDir);
   return entries.filter((e) => !e.startsWith(".") && e !== "archive");
@@ -76,7 +64,7 @@ export async function listSessionFiles(
 export async function findSessionForIssue(
   sessionDir: string,
   issueId: string,
-  tmuxSessions: string[]
+  tmuxSessions: string[],
 ): Promise<string | null> {
   const lower = issueId.toLowerCase();
   const files = await listSessionFiles(sessionDir);

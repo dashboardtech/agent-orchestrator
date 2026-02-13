@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
-import { rmSync } from "node:fs";
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 
@@ -110,11 +109,11 @@ describe("status command", () => {
     mkdirSync(sessionDir, { recursive: true });
     writeFileSync(
       join(sessionDir, "app-1"),
-      "worktree=/tmp/wt/app-1\nbranch=feat/INT-100\nstatus=working\nissue=INT-100\n"
+      "worktree=/tmp/wt/app-1\nbranch=feat/INT-100\nstatus=working\nissue=INT-100\n",
     );
     writeFileSync(
       join(sessionDir, "app-2"),
-      "worktree=/tmp/wt/app-2\nbranch=feat/INT-200\nstatus=pr_open\npr=https://github.com/org/repo/pull/42\n"
+      "worktree=/tmp/wt/app-2\nbranch=feat/INT-200\nstatus=pr_open\npr=https://github.com/org/repo/pull/42\n",
     );
 
     mockTmux.mockImplementation(async (...args: string[]) => {
@@ -181,7 +180,7 @@ describe("status command", () => {
     mkdirSync(sessionDir, { recursive: true });
     writeFileSync(
       join(sessionDir, "app-1"),
-      "worktree=/tmp/wt\nbranch=old-branch\nstatus=working\n"
+      "worktree=/tmp/wt\nbranch=old-branch\nstatus=working\n",
     );
 
     mockTmux.mockImplementation(async (...args: string[]) => {

@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { mkdtempSync, mkdirSync, writeFileSync, existsSync, readFileSync } from "node:fs";
-import { rmSync } from "node:fs";
+import { mkdtempSync, mkdirSync, writeFileSync, existsSync, readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 
@@ -105,9 +104,9 @@ afterEach(() => {
 
 describe("spawn command", () => {
   it("rejects unknown project", async () => {
-    await expect(
-      program.parseAsync(["node", "test", "spawn", "nonexistent"])
-    ).rejects.toThrow("process.exit(1)");
+    await expect(program.parseAsync(["node", "test", "spawn", "nonexistent"])).rejects.toThrow(
+      "process.exit(1)",
+    );
   });
 
   it("creates session with correct naming (prefix-N)", async () => {
@@ -120,7 +119,7 @@ describe("spawn command", () => {
     // Should have called tmux new-session with "app-1"
     expect(mockExec).toHaveBeenCalledWith(
       "tmux",
-      expect.arrayContaining(["new-session", "-d", "-s", "app-1"])
+      expect.arrayContaining(["new-session", "-d", "-s", "app-1"]),
     );
   });
 
@@ -137,24 +136,19 @@ describe("spawn command", () => {
     await program.parseAsync(["node", "test", "spawn", "my-app"]);
 
     // Next number should be 4 (max of 1,3 + 1)
-    expect(mockExec).toHaveBeenCalledWith(
-      "tmux",
-      expect.arrayContaining(["-s", "app-4"])
-    );
+    expect(mockExec).toHaveBeenCalledWith("tmux", expect.arrayContaining(["-s", "app-4"]));
   });
 
   it("creates feature branch from issue ID", async () => {
     mockTmux.mockResolvedValue(null);
     mockGit.mockResolvedValue("feat/INT-123");
 
-    await program.parseAsync([
-      "node", "test", "spawn", "my-app", "INT-123",
-    ]);
+    await program.parseAsync(["node", "test", "spawn", "my-app", "INT-123"]);
 
     // Should have created worktree with branch
     expect(mockGit).toHaveBeenCalledWith(
       expect.arrayContaining(["worktree", "add", "-b", "feat/INT-123"]),
-      expect.any(String)
+      expect.any(String),
     );
   });
 
@@ -166,7 +160,7 @@ describe("spawn command", () => {
 
     expect(mockGit).toHaveBeenCalledWith(
       expect.arrayContaining(["worktree", "add", expect.any(String), "origin/main", "--detach"]),
-      expect.any(String)
+      expect.any(String),
     );
   });
 
@@ -174,9 +168,7 @@ describe("spawn command", () => {
     mockTmux.mockResolvedValue(null);
     mockGit.mockResolvedValue("feat/INT-100");
 
-    await program.parseAsync([
-      "node", "test", "spawn", "my-app", "INT-100",
-    ]);
+    await program.parseAsync(["node", "test", "spawn", "my-app", "INT-100"]);
 
     const sessionDir = join(tmpDir, "my-app-sessions");
     expect(existsSync(sessionDir)).toBe(true);
@@ -197,10 +189,13 @@ describe("spawn command", () => {
 
     await program.parseAsync(["node", "test", "spawn", "my-app"]);
 
-    expect(mockExec).toHaveBeenCalledWith(
-      "tmux",
-      ["send-keys", "-t", "app-1", "unset CLAUDECODE && claude", "Enter"]
-    );
+    expect(mockExec).toHaveBeenCalledWith("tmux", [
+      "send-keys",
+      "-t",
+      "app-1",
+      "unset CLAUDECODE && claude",
+      "Enter",
+    ]);
   });
 
   it("fetches from remote before creating worktree", async () => {
@@ -209,30 +204,22 @@ describe("spawn command", () => {
 
     await program.parseAsync(["node", "test", "spawn", "my-app"]);
 
-    expect(mockGit).toHaveBeenCalledWith(
-      ["fetch", "origin", "--quiet"],
-      expect.any(String)
-    );
+    expect(mockGit).toHaveBeenCalledWith(["fetch", "origin", "--quiet"], expect.any(String));
   });
 
   it("sends initial prompt when issue ID is provided", async () => {
     mockTmux.mockResolvedValue(null);
     mockGit.mockResolvedValue("feat/INT-100");
 
-    await program.parseAsync([
-      "node", "test", "spawn", "my-app", "INT-100",
-    ]);
+    await program.parseAsync(["node", "test", "spawn", "my-app", "INT-100"]);
 
-    expect(mockExec).toHaveBeenCalledWith(
-      "tmux",
-      [
-        "send-keys",
-        "-t",
-        "app-1",
-        expect.stringContaining("INT-100"),
-        "Enter",
-      ]
-    );
+    expect(mockExec).toHaveBeenCalledWith("tmux", [
+      "send-keys",
+      "-t",
+      "app-1",
+      expect.stringContaining("INT-100"),
+      "Enter",
+    ]);
   });
 
   it("outputs SESSION= for scripting", async () => {
@@ -248,9 +235,7 @@ describe("spawn command", () => {
 describe("batch-spawn command", () => {
   it("rejects unknown project", async () => {
     await expect(
-      program.parseAsync([
-        "node", "test", "batch-spawn", "nonexistent", "ISSUE-1",
-      ])
+      program.parseAsync(["node", "test", "batch-spawn", "nonexistent", "ISSUE-1"]),
     ).rejects.toThrow("process.exit(1)");
   });
 
@@ -259,9 +244,7 @@ describe("batch-spawn command", () => {
     const createdSessions: string[] = [];
     mockTmux.mockImplementation(async (...args: string[]) => {
       if (args[0] === "list-sessions") {
-        return createdSessions.length > 0
-          ? createdSessions.join("\n")
-          : null;
+        return createdSessions.length > 0 ? createdSessions.join("\n") : null;
       }
       return null;
     });
@@ -275,9 +258,7 @@ describe("batch-spawn command", () => {
       return { stdout: "", stderr: "" };
     });
 
-    await program.parseAsync([
-      "node", "test", "batch-spawn", "my-app", "INT-1", "INT-2",
-    ]);
+    await program.parseAsync(["node", "test", "batch-spawn", "my-app", "INT-1", "INT-2"]);
 
     const output = consoleSpy.mock.calls.map((c) => String(c[0])).join("\n");
     expect(output).toContain("Created:");
@@ -289,10 +270,7 @@ describe("batch-spawn command", () => {
     // Create existing session metadata
     const sessionDir = join(tmpDir, "my-app-sessions");
     mkdirSync(sessionDir, { recursive: true });
-    writeFileSync(
-      join(sessionDir, "app-1"),
-      "branch=feat/INT-100\nissue=INT-100\n"
-    );
+    writeFileSync(join(sessionDir, "app-1"), "branch=feat/INT-100\nissue=INT-100\n");
 
     mockTmux.mockImplementation(async (...args: string[]) => {
       if (args[0] === "list-sessions") return "app-1";
@@ -300,9 +278,7 @@ describe("batch-spawn command", () => {
     });
     mockGit.mockResolvedValue("feat/branch");
 
-    await program.parseAsync([
-      "node", "test", "batch-spawn", "my-app", "INT-100", "INT-200",
-    ]);
+    await program.parseAsync(["node", "test", "batch-spawn", "my-app", "INT-100", "INT-200"]);
 
     const output = consoleSpy.mock.calls.map((c) => String(c[0])).join("\n");
     expect(output).toContain("Skip INT-100");
@@ -315,9 +291,7 @@ describe("batch-spawn command", () => {
     mockTmux.mockResolvedValue(null);
     mockGit.mockResolvedValue("main");
 
-    await program.parseAsync([
-      "node", "test", "batch-spawn", "my-app", "INT-1",
-    ]);
+    await program.parseAsync(["node", "test", "batch-spawn", "my-app", "INT-1"]);
 
     const output = consoleSpy.mock.calls.map((c) => String(c[0])).join("\n");
     expect(output).toContain("Summary:");

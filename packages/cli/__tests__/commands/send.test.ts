@@ -49,12 +49,10 @@ describe("send command", () => {
       mockTmux.mockResolvedValue(null); // has-session fails
 
       await expect(
-        program.parseAsync(["node", "test", "send", "nonexistent", "hello"])
+        program.parseAsync(["node", "test", "send", "nonexistent", "hello"]),
       ).rejects.toThrow("process.exit(1)");
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining("does not exist")
-      );
+      expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining("does not exist"));
     });
   });
 
@@ -75,11 +73,9 @@ describe("send command", () => {
       });
 
       // isProcessing should detect processing after send
-      let captureCallCount = 0;
       mockTmux.mockImplementation(async (...args: string[]) => {
         if (args[0] === "has-session") return "";
         if (args[0] === "capture-pane") {
-          captureCallCount++;
           const sIdx = args.indexOf("-S");
           if (sIdx >= 0 && args[sIdx + 1] === "-5") {
             return "some output\n❯ ";
@@ -92,22 +88,19 @@ describe("send command", () => {
         return "";
       });
 
-      await program.parseAsync([
-        "node", "test", "send", "my-session", "hello", "world",
-      ]);
+      await program.parseAsync(["node", "test", "send", "my-session", "hello", "world"]);
 
       // Should have sent keys
-      expect(mockExec).toHaveBeenCalledWith(
-        "tmux",
-        ["send-keys", "-t", "my-session", "hello world"]
-      );
+      expect(mockExec).toHaveBeenCalledWith("tmux", [
+        "send-keys",
+        "-t",
+        "my-session",
+        "hello world",
+      ]);
       // Should have sent Enter
-      expect(mockExec).toHaveBeenCalledWith(
-        "tmux",
-        ["send-keys", "-t", "my-session", "Enter"]
-      );
+      expect(mockExec).toHaveBeenCalledWith("tmux", ["send-keys", "-t", "my-session", "Enter"]);
       expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining("Message sent and processing")
+        expect.stringContaining("Message sent and processing"),
       );
     });
 
@@ -139,15 +132,15 @@ describe("send command", () => {
         return "";
       });
 
-      await program.parseAsync([
-        "node", "test", "send", "my-session", "fix", "the", "bug",
-      ]);
+      await program.parseAsync(["node", "test", "send", "my-session", "fix", "the", "bug"]);
 
       // Should have eventually sent the message
-      expect(mockExec).toHaveBeenCalledWith(
-        "tmux",
-        ["send-keys", "-t", "my-session", "fix the bug"]
-      );
+      expect(mockExec).toHaveBeenCalledWith("tmux", [
+        "send-keys",
+        "-t",
+        "my-session",
+        "fix the bug",
+      ]);
     });
 
     it("skips busy detection with --no-wait", async () => {
@@ -163,15 +156,10 @@ describe("send command", () => {
         return "";
       });
 
-      await program.parseAsync([
-        "node", "test", "send", "--no-wait", "my-session", "urgent",
-      ]);
+      await program.parseAsync(["node", "test", "send", "--no-wait", "my-session", "urgent"]);
 
       // Should have sent the message without waiting
-      expect(mockExec).toHaveBeenCalledWith(
-        "tmux",
-        ["send-keys", "-t", "my-session", "urgent"]
-      );
+      expect(mockExec).toHaveBeenCalledWith("tmux", ["send-keys", "-t", "my-session", "urgent"]);
     });
 
     it("detects queued message state", async () => {
@@ -190,13 +178,9 @@ describe("send command", () => {
         return "";
       });
 
-      await program.parseAsync([
-        "node", "test", "send", "my-session", "hello",
-      ]);
+      await program.parseAsync(["node", "test", "send", "my-session", "hello"]);
 
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining("Message queued")
-      );
+      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("Message queued"));
     });
   });
 
@@ -207,27 +191,18 @@ describe("send command", () => {
         if (args[0] === "capture-pane") {
           const sIdx = args.indexOf("-S");
           if (sIdx >= 0 && args[sIdx + 1] === "-5") return "❯ ";
-          if (sIdx >= 0 && args[sIdx + 1] === "-10")
-            return "esc to interrupt";
+          if (sIdx >= 0 && args[sIdx + 1] === "-10") return "esc to interrupt";
           return "";
         }
         return "";
       });
 
       const longMsg = "x".repeat(250);
-      await program.parseAsync([
-        "node", "test", "send", "my-session", longMsg,
-      ]);
+      await program.parseAsync(["node", "test", "send", "my-session", longMsg]);
 
       // Should have used load-buffer for long message
-      expect(mockExec).toHaveBeenCalledWith(
-        "tmux",
-        expect.arrayContaining(["load-buffer"])
-      );
-      expect(mockExec).toHaveBeenCalledWith(
-        "tmux",
-        expect.arrayContaining(["paste-buffer"])
-      );
+      expect(mockExec).toHaveBeenCalledWith("tmux", expect.arrayContaining(["load-buffer"]));
+      expect(mockExec).toHaveBeenCalledWith("tmux", expect.arrayContaining(["paste-buffer"]));
     });
 
     it("uses send-keys for short messages", async () => {
@@ -236,21 +211,15 @@ describe("send command", () => {
         if (args[0] === "capture-pane") {
           const sIdx = args.indexOf("-S");
           if (sIdx >= 0 && args[sIdx + 1] === "-5") return "❯ ";
-          if (sIdx >= 0 && args[sIdx + 1] === "-10")
-            return "esc to interrupt";
+          if (sIdx >= 0 && args[sIdx + 1] === "-10") return "esc to interrupt";
           return "";
         }
         return "";
       });
 
-      await program.parseAsync([
-        "node", "test", "send", "my-session", "short", "msg",
-      ]);
+      await program.parseAsync(["node", "test", "send", "my-session", "short", "msg"]);
 
-      expect(mockExec).toHaveBeenCalledWith(
-        "tmux",
-        ["send-keys", "-t", "my-session", "short msg"]
-      );
+      expect(mockExec).toHaveBeenCalledWith("tmux", ["send-keys", "-t", "my-session", "short msg"]);
     });
 
     it("clears partial input before sending", async () => {
@@ -259,22 +228,16 @@ describe("send command", () => {
         if (args[0] === "capture-pane") {
           const sIdx = args.indexOf("-S");
           if (sIdx >= 0 && args[sIdx + 1] === "-5") return "❯ ";
-          if (sIdx >= 0 && args[sIdx + 1] === "-10")
-            return "esc to interrupt";
+          if (sIdx >= 0 && args[sIdx + 1] === "-10") return "esc to interrupt";
           return "";
         }
         return "";
       });
 
-      await program.parseAsync([
-        "node", "test", "send", "my-session", "hello",
-      ]);
+      await program.parseAsync(["node", "test", "send", "my-session", "hello"]);
 
       // C-u should be called to clear input
-      expect(mockExec).toHaveBeenCalledWith(
-        "tmux",
-        ["send-keys", "-t", "my-session", "C-u"]
-      );
+      expect(mockExec).toHaveBeenCalledWith("tmux", ["send-keys", "-t", "my-session", "C-u"]);
     });
   });
 });

@@ -1,7 +1,6 @@
 import chalk from "chalk";
 import type { Command } from "commander";
-import { loadConfig } from "@agent-orchestrator/core";
-import type { OrchestratorConfig } from "@agent-orchestrator/core";
+import { loadConfig, type OrchestratorConfig } from "@agent-orchestrator/core";
 import { tmux, git, gh, getTmuxSessions, getTmuxActivity } from "../lib/shell.js";
 import { getSessionDir, readMetadata, archiveMetadata } from "../lib/metadata.js";
 import { formatAge } from "../lib/format.js";
@@ -9,7 +8,7 @@ import { formatAge } from "../lib/format.js";
 async function killSession(
   config: OrchestratorConfig,
   projectId: string,
-  sessionName: string
+  sessionName: string,
 ): Promise<void> {
   const sessionDir = getSessionDir(config.dataDir, projectId);
   const metaFile = `${sessionDir}/${sessionName}`;
@@ -36,10 +35,7 @@ async function killSession(
   console.log(chalk.green(`  Archived metadata`));
 }
 
-function findProjectForSession(
-  config: OrchestratorConfig,
-  sessionName: string
-): string | null {
+function findProjectForSession(config: OrchestratorConfig, sessionName: string): string | null {
   for (const [id, project] of Object.entries(config.projects)) {
     const prefix = project.sessionPrefix || id;
     if (sessionName.startsWith(`${prefix}-`)) {
@@ -50,9 +46,7 @@ function findProjectForSession(
 }
 
 export function registerSession(program: Command): void {
-  const session = program
-    .command("session")
-    .description("Session management (ls, kill, cleanup)");
+  const session = program.command("session").description("Session management (ls, kill, cleanup)");
 
   session
     .command("ls")
@@ -68,9 +62,7 @@ export function registerSession(program: Command): void {
       for (const [projectId, project] of Object.entries(projects)) {
         const prefix = project.sessionPrefix || projectId;
         const sessionDir = getSessionDir(config.dataDir, projectId);
-        const projectSessions = allTmux.filter((s) =>
-          s.startsWith(`${prefix}-`)
-        );
+        const projectSessions = allTmux.filter((s) => s.startsWith(`${prefix}-`));
 
         console.log(chalk.bold(`\n${project.name || projectId}:`));
 
@@ -86,10 +78,7 @@ export function registerSession(program: Command): void {
 
           let branchStr = meta?.branch || "";
           if (meta?.worktree) {
-            const liveBranch = await git(
-              ["branch", "--show-current"],
-              meta.worktree
-            );
+            const liveBranch = await git(["branch", "--show-current"], meta.worktree);
             if (liveBranch) branchStr = liveBranch;
           }
 
@@ -112,9 +101,7 @@ export function registerSession(program: Command): void {
       const config = loadConfig();
       const projectId = findProjectForSession(config, sessionName);
       if (!projectId) {
-        console.error(
-          chalk.red(`Could not determine project for session: ${sessionName}`)
-        );
+        console.error(chalk.red(`Could not determine project for session: ${sessionName}`));
         process.exit(1);
       }
       await killSession(config, projectId, sessionName);
@@ -141,9 +128,7 @@ export function registerSession(program: Command): void {
       for (const [projectId, project] of Object.entries(projects)) {
         const prefix = project.sessionPrefix || projectId;
         const sessionDir = getSessionDir(config.dataDir, projectId);
-        const projectSessions = allTmux.filter((s) =>
-          s.startsWith(`${prefix}-`)
-        );
+        const projectSessions = allTmux.filter((s) => s.startsWith(`${prefix}-`));
 
         for (const sessionName of projectSessions) {
           const meta = readMetadata(`${sessionDir}/${sessionName}`);
@@ -177,15 +162,9 @@ export function registerSession(program: Command): void {
           if (shouldKill) {
             found++;
             if (opts.dryRun) {
-              console.log(
-                chalk.yellow(
-                  `  Would kill ${sessionName}: ${reason}`
-                )
-              );
+              console.log(chalk.yellow(`  Would kill ${sessionName}: ${reason}`));
             } else {
-              console.log(
-                chalk.yellow(`  Killing ${sessionName}: ${reason}`)
-              );
+              console.log(chalk.yellow(`  Killing ${sessionName}: ${reason}`));
               await killSession(config, projectId, sessionName);
               cleaned++;
             }
@@ -197,7 +176,11 @@ export function registerSession(program: Command): void {
         if (found === 0) {
           console.log(chalk.dim("  No sessions to clean up."));
         } else {
-          console.log(chalk.dim(`\nDry run complete. ${found} session${found !== 1 ? "s" : ""} would be cleaned.`));
+          console.log(
+            chalk.dim(
+              `\nDry run complete. ${found} session${found !== 1 ? "s" : ""} would be cleaned.`,
+            ),
+          );
         }
       } else if (cleaned === 0) {
         console.log(chalk.dim("  No sessions to clean up."));

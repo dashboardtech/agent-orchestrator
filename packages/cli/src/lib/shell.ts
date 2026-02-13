@@ -11,7 +11,7 @@ export interface ExecResult {
 export async function exec(
   cmd: string,
   args: string[],
-  options?: { cwd?: string; env?: Record<string, string> }
+  options?: { cwd?: string; env?: Record<string, string> },
 ): Promise<ExecResult> {
   const { stdout, stderr } = await execFileAsync(cmd, args, {
     cwd: options?.cwd,
@@ -21,10 +21,7 @@ export async function exec(
   return { stdout: stdout.trimEnd(), stderr: stderr.trimEnd() };
 }
 
-export async function execSilent(
-  cmd: string,
-  args: string[]
-): Promise<string | null> {
+export async function execSilent(cmd: string, args: string[]): Promise<string | null> {
   try {
     const { stdout } = await exec(cmd, args);
     return stdout;
@@ -37,10 +34,7 @@ export async function tmux(...args: string[]): Promise<string | null> {
   return execSilent("tmux", args);
 }
 
-export async function git(
-  args: string[],
-  cwd?: string
-): Promise<string | null> {
+export async function git(args: string[], cwd?: string): Promise<string | null> {
   try {
     const { stdout } = await exec("git", args, { cwd });
     return stdout;
@@ -60,13 +54,7 @@ export async function getTmuxSessions(): Promise<string[]> {
 }
 
 export async function getTmuxActivity(session: string): Promise<number | null> {
-  const output = await tmux(
-    "display-message",
-    "-t",
-    session,
-    "-p",
-    "#{session_activity}"
-  );
+  const output = await tmux("display-message", "-t", session, "-p", "#{session_activity}");
   if (!output) return null;
   const ts = parseInt(output, 10);
   return isNaN(ts) ? null : ts * 1000;

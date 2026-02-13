@@ -3,8 +3,7 @@ import { join } from "node:path";
 import chalk from "chalk";
 import ora from "ora";
 import type { Command } from "commander";
-import { loadConfig } from "@agent-orchestrator/core";
-import type { OrchestratorConfig, ProjectConfig } from "@agent-orchestrator/core";
+import { loadConfig, type OrchestratorConfig, type ProjectConfig } from "@agent-orchestrator/core";
 import { exec, git, getTmuxSessions } from "../lib/shell.js";
 import { getSessionDir, writeMetadata, findSessionForIssue } from "../lib/metadata.js";
 import { banner } from "../lib/format.js";
@@ -32,7 +31,7 @@ async function spawnSession(
   projectId: string,
   project: ProjectConfig,
   issueId?: string,
-  openTab?: boolean
+  openTab?: boolean,
 ): Promise<string> {
   const prefix = project.sessionPrefix || projectId;
   const num = await getNextSessionNumber(prefix);
@@ -51,20 +50,14 @@ async function spawnSession(
   if (branch) {
     const result = await git(
       ["worktree", "add", "-b", branch, worktreePath, defaultRef],
-      project.path
+      project.path,
     );
     if (!result) {
       // Branch already exists — check it out in the new worktree
-      await git(
-        ["worktree", "add", worktreePath, branch],
-        project.path
-      );
+      await git(["worktree", "add", worktreePath, branch], project.path);
     }
   } else {
-    await git(
-      ["worktree", "add", worktreePath, defaultRef, "--detach"],
-      project.path
-    );
+    await git(["worktree", "add", worktreePath, defaultRef, "--detach"], project.path);
   }
 
   spinner.text = "Setting up workspace";
@@ -118,13 +111,7 @@ async function spawnSession(
   // Run post-create hooks before agent launch (so environment is ready)
   if (project.postCreate) {
     for (const cmd of project.postCreate) {
-      await exec("tmux", [
-        "send-keys",
-        "-t",
-        sessionName,
-        cmd,
-        "Enter",
-      ]);
+      await exec("tmux", ["send-keys", "-t", sessionName, cmd, "Enter"]);
     }
     // Allow hooks to complete before starting agent
     await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -135,9 +122,7 @@ async function spawnSession(
   let launchCmd: string;
   if (agentName === "claude-code") {
     const perms =
-      project.agentConfig?.permissions === "skip"
-        ? " --dangerously-skip-permissions"
-        : "";
+      project.agentConfig?.permissions === "skip" ? " --dangerously-skip-permissions" : "";
     launchCmd = `unset CLAUDECODE && claude${perms}`;
   } else if (agentName === "codex") {
     launchCmd = "codex";
@@ -200,25 +185,19 @@ export function registerSpawn(program: Command): void {
     .argument("<project>", "Project ID from config")
     .argument("[issue]", "Issue identifier (e.g. INT-1234, #42)")
     .option("--open", "Open session in terminal tab")
-    .action(
-      async (
-        projectId: string,
-        issueId: string | undefined,
-        opts: { open?: boolean }
-      ) => {
-        const config = loadConfig();
-        const project = config.projects[projectId];
-        if (!project) {
-          console.error(
-            chalk.red(
-              `Unknown project: ${projectId}\nAvailable: ${Object.keys(config.projects).join(", ")}`
-            )
-          );
-          process.exit(1);
-        }
-        await spawnSession(config, projectId, project, issueId, opts.open);
+    .action(async (projectId: string, issueId: string | undefined, opts: { open?: boolean }) => {
+      const config = loadConfig();
+      const project = config.projects[projectId];
+      if (!project) {
+        console.error(
+          chalk.red(
+            `Unknown project: ${projectId}\nAvailable: ${Object.keys(config.projects).join(", ")}`,
+          ),
+        );
+        process.exit(1);
       }
-    );
+      await spawnSession(config, projectId, project, issueId, opts.open);
+    });
 }
 
 export function registerBatchSpawn(program: Command): void {
@@ -228,94 +207,68 @@ export function registerBatchSpawn(program: Command): void {
     .argument("<project>", "Project ID from config")
     .argument("<issues...>", "Issue identifiers")
     .option("--open", "Open sessions in terminal tabs")
-    .action(
-      async (
-        projectId: string,
-        issues: string[],
-        opts: { open?: boolean }
-      ) => {
-        const config = loadConfig();
-        const project = config.projects[projectId];
-        if (!project) {
-          console.error(
-            chalk.red(
-              `Unknown project: ${projectId}\nAvailable: ${Object.keys(config.projects).join(", ")}`
-            )
-          );
-          process.exit(1);
-        }
-
-        console.log(banner("BATCH SESSION SPAWNER"));
-        console.log();
-        console.log(`  Project: ${chalk.bold(projectId)}`);
-        console.log(`  Issues:  ${issues.join(", ")}`);
-        console.log();
-
-        const allTmux = await getTmuxSessions();
-        const sessionDir = getSessionDir(config.dataDir, projectId);
-        const created: Array<{ session: string; issue: string }> = [];
-        const skipped: Array<{ issue: string; existing: string }> = [];
-        const failed: string[] = [];
-
-        for (const issue of issues) {
-          // Duplicate detection
-          const existing = await findSessionForIssue(
-            sessionDir,
-            issue,
-            allTmux
-          );
-          if (existing) {
-            console.log(
-              chalk.yellow(
-                `  Skip ${issue} — already has session: ${existing}`
-              )
-            );
-            skipped.push({ issue, existing });
-            continue;
-          }
-
-          try {
-            const sessionName = await spawnSession(
-              config,
-              projectId,
-              project,
-              issue,
-              opts.open
-            );
-            created.push({ session: sessionName, issue });
-          } catch (err) {
-            console.error(chalk.red(`  Failed to spawn for ${issue}: ${err}`));
-            failed.push(issue);
-          }
-
-          // Small delay between spawns
-          await new Promise((r) => setTimeout(r, 500));
-        }
-
-        console.log(chalk.bold("\nSummary:"));
-        console.log(
-          `  Created: ${chalk.green(String(created.length))} sessions`
+    .action(async (projectId: string, issues: string[], opts: { open?: boolean }) => {
+      const config = loadConfig();
+      const project = config.projects[projectId];
+      if (!project) {
+        console.error(
+          chalk.red(
+            `Unknown project: ${projectId}\nAvailable: ${Object.keys(config.projects).join(", ")}`,
+          ),
         );
-        console.log(
-          `  Skipped: ${chalk.yellow(String(skipped.length))} (duplicate)`
-        );
-        console.log(
-          `  Failed:  ${chalk.red(String(failed.length))}`
-        );
-
-        if (created.length > 0) {
-          console.log(chalk.bold("\nCreated sessions:"));
-          for (const { session, issue } of created) {
-            console.log(`  ${chalk.green(session)} -> ${issue}`);
-          }
-        }
-        if (skipped.length > 0) {
-          console.log(chalk.bold("\nSkipped (duplicate):"));
-          for (const { issue, existing } of skipped) {
-            console.log(`  ${issue} -> existing: ${existing}`);
-          }
-        }
-        console.log();
+        process.exit(1);
       }
-    );
+
+      console.log(banner("BATCH SESSION SPAWNER"));
+      console.log();
+      console.log(`  Project: ${chalk.bold(projectId)}`);
+      console.log(`  Issues:  ${issues.join(", ")}`);
+      console.log();
+
+      const allTmux = await getTmuxSessions();
+      const sessionDir = getSessionDir(config.dataDir, projectId);
+      const created: Array<{ session: string; issue: string }> = [];
+      const skipped: Array<{ issue: string; existing: string }> = [];
+      const failed: string[] = [];
+
+      for (const issue of issues) {
+        // Duplicate detection
+        const existing = await findSessionForIssue(sessionDir, issue, allTmux);
+        if (existing) {
+          console.log(chalk.yellow(`  Skip ${issue} — already has session: ${existing}`));
+          skipped.push({ issue, existing });
+          continue;
+        }
+
+        try {
+          const sessionName = await spawnSession(config, projectId, project, issue, opts.open);
+          created.push({ session: sessionName, issue });
+        } catch (err) {
+          console.error(chalk.red(`  Failed to spawn for ${issue}: ${err}`));
+          failed.push(issue);
+        }
+
+        // Small delay between spawns
+        await new Promise((r) => setTimeout(r, 500));
+      }
+
+      console.log(chalk.bold("\nSummary:"));
+      console.log(`  Created: ${chalk.green(String(created.length))} sessions`);
+      console.log(`  Skipped: ${chalk.yellow(String(skipped.length))} (duplicate)`);
+      console.log(`  Failed:  ${chalk.red(String(failed.length))}`);
+
+      if (created.length > 0) {
+        console.log(chalk.bold("\nCreated sessions:"));
+        for (const { session, issue } of created) {
+          console.log(`  ${chalk.green(session)} -> ${issue}`);
+        }
+      }
+      if (skipped.length > 0) {
+        console.log(chalk.bold("\nSkipped (duplicate):"));
+        for (const { issue, existing } of skipped) {
+          console.log(`  ${issue} -> existing: ${existing}`);
+        }
+      }
+      console.log();
+    });
 }

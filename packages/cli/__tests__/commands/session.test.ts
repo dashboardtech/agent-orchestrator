@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { mkdtempSync, mkdirSync, writeFileSync, existsSync, readdirSync } from "node:fs";
-import { rmSync } from "node:fs";
+import { mkdtempSync, mkdirSync, writeFileSync, existsSync, readdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 
@@ -114,10 +113,7 @@ describe("session ls", () => {
   it("lists sessions with metadata", async () => {
     const sessionDir = join(tmpDir, "my-app-sessions");
     mkdirSync(sessionDir, { recursive: true });
-    writeFileSync(
-      join(sessionDir, "app-1"),
-      "branch=feat/INT-100\nstatus=working\n"
-    );
+    writeFileSync(join(sessionDir, "app-1"), "branch=feat/INT-100\nstatus=working\n");
 
     mockTmux.mockImplementation(async (...args: string[]) => {
       if (args[0] === "list-sessions") return "app-1";
@@ -139,10 +135,7 @@ describe("session ls", () => {
   it("gets live branch from worktree", async () => {
     const sessionDir = join(tmpDir, "my-app-sessions");
     mkdirSync(sessionDir, { recursive: true });
-    writeFileSync(
-      join(sessionDir, "app-1"),
-      "worktree=/tmp/wt\nbranch=old\nstatus=idle\n"
-    );
+    writeFileSync(join(sessionDir, "app-1"), "worktree=/tmp/wt\nbranch=old\nstatus=idle\n");
 
     mockTmux.mockImplementation(async (...args: string[]) => {
       if (args[0] === "list-sessions") return "app-1";
@@ -161,7 +154,7 @@ describe("session ls", () => {
     mkdirSync(sessionDir, { recursive: true });
     writeFileSync(
       join(sessionDir, "app-1"),
-      "branch=fix\nstatus=pr_open\npr=https://github.com/org/repo/pull/42\n"
+      "branch=fix\nstatus=pr_open\npr=https://github.com/org/repo/pull/42\n",
     );
 
     mockTmux.mockImplementation(async (...args: string[]) => {
@@ -180,17 +173,14 @@ describe("session ls", () => {
 describe("session kill", () => {
   it("rejects unknown session (no matching project)", async () => {
     await expect(
-      program.parseAsync(["node", "test", "session", "kill", "unknown-1"])
+      program.parseAsync(["node", "test", "session", "kill", "unknown-1"]),
     ).rejects.toThrow("process.exit(1)");
   });
 
   it("kills tmux session and archives metadata", async () => {
     const sessionDir = join(tmpDir, "my-app-sessions");
     mkdirSync(sessionDir, { recursive: true });
-    writeFileSync(
-      join(sessionDir, "app-1"),
-      "worktree=/tmp/wt\nbranch=feat/fix\nstatus=working\n"
-    );
+    writeFileSync(join(sessionDir, "app-1"), "worktree=/tmp/wt\nbranch=feat/fix\nstatus=working\n");
 
     mockTmux.mockResolvedValue("");
     mockGit.mockResolvedValue(null);
@@ -213,10 +203,7 @@ describe("session kill", () => {
   it("removes worktree when metadata has worktree path", async () => {
     const sessionDir = join(tmpDir, "my-app-sessions");
     mkdirSync(sessionDir, { recursive: true });
-    writeFileSync(
-      join(sessionDir, "app-1"),
-      "worktree=/tmp/test-wt\nbranch=main\n"
-    );
+    writeFileSync(join(sessionDir, "app-1"), "worktree=/tmp/test-wt\nbranch=main\n");
 
     mockTmux.mockResolvedValue("");
     mockGit.mockResolvedValue(null);
@@ -225,7 +212,7 @@ describe("session kill", () => {
 
     expect(mockGit).toHaveBeenCalledWith(
       ["worktree", "remove", "--force", "/tmp/test-wt"],
-      expect.any(String)
+      expect.any(String),
     );
   });
 });
@@ -236,7 +223,7 @@ describe("session cleanup", () => {
     mkdirSync(sessionDir, { recursive: true });
     writeFileSync(
       join(sessionDir, "app-1"),
-      "branch=feat/fix\nstatus=merged\npr=https://github.com/org/repo/pull/42\n"
+      "branch=feat/fix\nstatus=merged\npr=https://github.com/org/repo/pull/42\n",
     );
 
     mockTmux.mockImplementation(async (...args: string[]) => {
@@ -259,7 +246,7 @@ describe("session cleanup", () => {
     mkdirSync(sessionDir, { recursive: true });
     writeFileSync(
       join(sessionDir, "app-1"),
-      "branch=feat/fix\nstatus=pr_open\npr=https://github.com/org/repo/pull/42\n"
+      "branch=feat/fix\nstatus=pr_open\npr=https://github.com/org/repo/pull/42\n",
     );
 
     mockTmux.mockImplementation(async (...args: string[]) => {
@@ -279,7 +266,7 @@ describe("session cleanup", () => {
     mkdirSync(sessionDir, { recursive: true });
     writeFileSync(
       join(sessionDir, "app-1"),
-      "branch=feat/fix\npr=https://github.com/org/repo/pull/42\n"
+      "branch=feat/fix\npr=https://github.com/org/repo/pull/42\n",
     );
 
     mockTmux.mockImplementation(async (...args: string[]) => {
@@ -288,9 +275,7 @@ describe("session cleanup", () => {
     });
     mockGh.mockResolvedValue("MERGED");
 
-    await program.parseAsync([
-      "node", "test", "session", "cleanup", "--dry-run",
-    ]);
+    await program.parseAsync(["node", "test", "session", "cleanup", "--dry-run"]);
 
     const output = consoleSpy.mock.calls.map((c) => String(c[0])).join("\n");
     expect(output).toContain("Would kill app-1");

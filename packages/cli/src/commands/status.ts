@@ -2,8 +2,7 @@ import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import chalk from "chalk";
 import type { Command } from "commander";
-import type { OrchestratorConfig } from "@agent-orchestrator/core";
-import { loadConfig } from "@agent-orchestrator/core";
+import { loadConfig, type OrchestratorConfig } from "@agent-orchestrator/core";
 import { exec, git, getTmuxSessions, getTmuxActivity } from "../lib/shell.js";
 import { getSessionDir, readMetadata } from "../lib/metadata.js";
 import { banner, header, formatAge, statusColor } from "../lib/format.js";
@@ -25,12 +24,16 @@ interface SessionInfo {
  * Maps: tmux session → TTY → Claude PID → CWD → .claude/projects/ → JSONL summary
  */
 async function getClaudeSessionInfo(
-  sessionName: string
+  sessionName: string,
 ): Promise<{ summary: string | null; sessionId: string | null }> {
   try {
     // Get the TTY for this tmux session's pane
     const ttyOutput = await exec("tmux", [
-      "display-message", "-t", sessionName, "-p", "#{pane_tty}",
+      "display-message",
+      "-t",
+      sessionName,
+      "-p",
+      "#{pane_tty}",
     ]);
     const tty = ttyOutput.stdout.trim();
     if (!tty) return { summary: null, sessionId: null };
@@ -44,21 +47,14 @@ async function getClaudeSessionInfo(
     if (!pid) return { summary: null, sessionId: null };
 
     // Get Claude's working directory
-    const cwdOutput = await exec("lsof", [
-      "-p", pid, "-d", "cwd", "-Fn",
-    ]);
+    const cwdOutput = await exec("lsof", ["-p", pid, "-d", "cwd", "-Fn"]);
     const cwdMatch = cwdOutput.stdout.match(/n(.+)/);
     const cwd = cwdMatch?.[1];
     if (!cwd) return { summary: null, sessionId: null };
 
     // Encode path for Claude's project directory naming
     const encodedPath = cwd.replace(/\//g, "-").replace(/^-/, "");
-    const claudeProjectDir = join(
-      process.env.HOME || "~",
-      ".claude",
-      "projects",
-      encodedPath
-    );
+    const claudeProjectDir = join(process.env.HOME || "~", ".claude", "projects", encodedPath);
 
     if (!existsSync(claudeProjectDir)) return { summary: null, sessionId: null };
 
@@ -96,10 +92,7 @@ async function getClaudeSessionInfo(
   }
 }
 
-async function gatherSessionInfo(
-  sessionName: string,
-  sessionDir: string,
-): Promise<SessionInfo> {
+async function gatherSessionInfo(sessionName: string, sessionDir: string): Promise<SessionInfo> {
   const metaFile = `${sessionDir}/${sessionName}`;
   const meta = readMetadata(metaFile);
 
@@ -125,17 +118,21 @@ async function gatherSessionInfo(
   const claudeInfo = await getClaudeSessionInfo(sessionName);
 
   return {
-    name: sessionName, branch, status, summary,
+    name: sessionName,
+    branch,
+    status,
+    summary,
     claudeSummary: claudeInfo.summary,
-    pr, issue, lastActivity, project,
+    pr,
+    issue,
+    lastActivity,
+    project,
   };
 }
 
 function printSession(info: SessionInfo): void {
   const statusStr = info.status ? ` ${statusColor(info.status)}` : "";
-  console.log(
-    `  ${chalk.green(info.name)} ${chalk.dim(`(${info.lastActivity})`)}${statusStr}`
-  );
+  console.log(`  ${chalk.green(info.name)} ${chalk.dim(`(${info.lastActivity})`)}${statusStr}`);
   if (info.branch) {
     console.log(`     ${chalk.dim("Branch:")} ${info.branch}`);
   }
@@ -146,13 +143,9 @@ function printSession(info: SessionInfo): void {
     console.log(`     ${chalk.dim("PR:")}     ${chalk.blue(info.pr)}`);
   }
   if (info.claudeSummary) {
-    console.log(
-      `     ${chalk.dim("Claude:")} ${info.claudeSummary.slice(0, 65)}`
-    );
+    console.log(`     ${chalk.dim("Claude:")} ${info.claudeSummary.slice(0, 65)}`);
   } else if (info.summary) {
-    console.log(
-      `     ${chalk.dim("Summary:")} ${info.summary.slice(0, 65)}`
-    );
+    console.log(`     ${chalk.dim("Summary:")} ${info.summary.slice(0, 65)}`);
   }
 }
 
@@ -222,8 +215,8 @@ export function registerStatus(program: Command): void {
 
       console.log(
         chalk.dim(
-          `\n  ${totalSessions} active session${totalSessions !== 1 ? "s" : ""} across ${Object.keys(projects).length} project${Object.keys(projects).length !== 1 ? "s" : ""}`
-        )
+          `\n  ${totalSessions} active session${totalSessions !== 1 ? "s" : ""} across ${Object.keys(projects).length} project${Object.keys(projects).length !== 1 ? "s" : ""}`,
+        ),
       );
       console.log();
     });
@@ -239,7 +232,7 @@ async function showFallbackStatus(): Promise<void> {
   console.log(banner("AGENT ORCHESTRATOR STATUS"));
   console.log();
   console.log(
-    chalk.dim(`  ${allTmux.length} tmux session${allTmux.length !== 1 ? "s" : ""} found\n`)
+    chalk.dim(`  ${allTmux.length} tmux session${allTmux.length !== 1 ? "s" : ""} found\n`),
   );
 
   for (const session of allTmux.sort()) {
