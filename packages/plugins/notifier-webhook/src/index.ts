@@ -108,7 +108,13 @@ function validateUrl(url: string, label: string): void {
 
 export function create(config?: Record<string, unknown>): Notifier {
   const url = config?.url as string | undefined;
-  const customHeaders = (config?.headers as Record<string, string>) ?? {};
+  const rawHeaders = config?.headers;
+  const customHeaders: Record<string, string> = {};
+  if (rawHeaders && typeof rawHeaders === "object" && !Array.isArray(rawHeaders)) {
+    for (const [k, v] of Object.entries(rawHeaders)) {
+      if (typeof v === "string") customHeaders[k] = v;
+    }
+  }
   const rawRetries = (config?.retries as number) ?? 2;
   const rawDelay = (config?.retryDelayMs as number) ?? 1000;
   const retries = Number.isFinite(rawRetries) ? Math.max(0, rawRetries) : 2;

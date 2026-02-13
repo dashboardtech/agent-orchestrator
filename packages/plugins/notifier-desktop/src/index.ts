@@ -87,7 +87,7 @@ function sendNotification(title: string, message: string, sound: boolean): Promi
 }
 
 export function create(config?: Record<string, unknown>): Notifier {
-  const soundEnabled = (config?.sound as boolean) ?? true;
+  const soundEnabled = typeof config?.sound === "boolean" ? config.sound : true;
 
   return {
     name: "desktop",

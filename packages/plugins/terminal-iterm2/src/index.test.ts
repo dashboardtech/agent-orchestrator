@@ -5,10 +5,16 @@ vi.mock("node:child_process", () => ({
   execFile: vi.fn(),
 }));
 
+vi.mock("node:os", () => ({
+  platform: vi.fn(() => "darwin"),
+}));
+
 import { execFile } from "node:child_process";
+import { platform } from "node:os";
 import { manifest, create, escapeAppleScript } from "./index.js";
 
 const mockExecFile = execFile as unknown as Mock;
+const mockPlatform = platform as unknown as Mock;
 
 function makeSession(overrides: Partial<Session> = {}): Session {
   return {
@@ -52,6 +58,7 @@ describe("terminal-iterm2", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.useFakeTimers();
+    mockPlatform.mockReturnValue("darwin");
   });
 
   describe("manifest", () => {
@@ -224,6 +231,26 @@ describe("terminal-iterm2", () => {
 
       // existing-1: 1 call (find=FOUND), new-1: 2 calls (find=NOT_FOUND + open)
       expect(mockExecFile).toHaveBeenCalledTimes(3);
+    });
+  });
+
+  describe("platform guard", () => {
+    it("openSession is a no-op on non-macOS", async () => {
+      mockPlatform.mockReturnValue("linux");
+      const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+      const terminal = create();
+      await terminal.openSession(makeSession());
+      expect(mockExecFile).not.toHaveBeenCalled();
+      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("only available on macOS"));
+      warnSpy.mockRestore();
+    });
+
+    it("isSessionOpen returns false on non-macOS", async () => {
+      mockPlatform.mockReturnValue("win32");
+      const terminal = create();
+      const result = await terminal.isSessionOpen!(makeSession());
+      expect(result).toBe(false);
+      expect(mockExecFile).not.toHaveBeenCalled();
     });
   });
 

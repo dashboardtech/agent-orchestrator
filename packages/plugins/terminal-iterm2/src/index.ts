@@ -1,4 +1,5 @@
 import { execFile } from "node:child_process";
+import { platform } from "node:os";
 import type { PluginModule, Terminal, Session } from "@agent-orchestrator/core";
 
 export const manifest = {
@@ -103,7 +104,7 @@ tell application "iTerm2"
         create tab with default profile
         tell current session
             set name to "${safe}"
-            write text "printf '\\\\033]0;${safe}\\\\007' && tmux attach -t '${shellSafe}'"
+            write text "printf '\\\\033]0;${shellSafe}\\\\007' && tmux attach -t '${shellSafe}'"
         end tell
     end tell
 end tell`;
@@ -116,11 +117,20 @@ function getSessionName(session: Session): string {
   return session.runtimeHandle?.id ?? session.id;
 }
 
+function isMacOS(): boolean {
+  return platform() === "darwin";
+}
+
 export function create(): Terminal {
   return {
     name: "iterm2",
 
     async openSession(session: Session): Promise<void> {
+      if (!isMacOS()) {
+        // eslint-disable-next-line no-console
+        console.warn("[terminal-iterm2] iTerm2 is only available on macOS");
+        return;
+      }
       const sessionName = getSessionName(session);
 
       // Try to find and select an existing tab first
@@ -131,7 +141,7 @@ export function create(): Terminal {
     },
 
     async openAll(sessions: Session[]): Promise<void> {
-      if (sessions.length === 0) return;
+      if (!isMacOS() || sessions.length === 0) return;
 
       for (const session of sessions) {
         const sessionName = getSessionName(session);
@@ -145,6 +155,7 @@ export function create(): Terminal {
     },
 
     async isSessionOpen(session: Session): Promise<boolean> {
+      if (!isMacOS()) return false;
       const sessionName = getSessionName(session);
       try {
         // Query-only check — does NOT select/focus the tab
