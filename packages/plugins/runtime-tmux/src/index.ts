@@ -54,8 +54,20 @@ export function create(): Runtime {
       // Create tmux session in detached mode
       await tmux("new-session", "-d", "-s", sessionName, "-c", config.workspacePath, ...envArgs);
 
-      // Send the launch command
-      await tmux("send-keys", "-t", sessionName, config.launchCommand, "Enter");
+      // Send the launch command — clean up the session if this fails
+      try {
+        await tmux("send-keys", "-t", sessionName, config.launchCommand, "Enter");
+      } catch (err: unknown) {
+        try {
+          await tmux("kill-session", "-t", sessionName);
+        } catch {
+          // Best-effort cleanup
+        }
+        const msg = err instanceof Error ? err.message : String(err);
+        throw new Error(`Failed to send launch command to session "${sessionName}": ${msg}`, {
+          cause: err,
+        });
+      }
 
       return {
         id: sessionName,
