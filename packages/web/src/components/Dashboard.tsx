@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
-import type { DashboardSession, DashboardStats, AttentionLevel } from "@/lib/types";
+import type { DashboardSession, DashboardStats, DashboardPR, AttentionLevel } from "@/lib/types";
 import { getAttentionLevel } from "@/lib/types";
 import { AttentionZone } from "./AttentionZone";
 import { PRTableRow } from "./PRStatus";
@@ -146,7 +146,7 @@ function Stat({ value, label, color }: { value: number; label: string; color: st
   );
 }
 
-function mergeScore(pr: { ciStatus: string; reviewDecision: string; mergeability: { noConflicts: boolean }; unresolvedThreads: number }): number {
+function mergeScore(pr: Pick<DashboardPR, "ciStatus" | "reviewDecision" | "mergeability" | "unresolvedThreads">): number {
   let score = 0;
   if (!pr.mergeability.noConflicts) score += 40;
   if (pr.ciStatus === "failing") score += 30;

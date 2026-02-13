@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getMockSession } from "@/lib/mock-data";
-import { validateString } from "@/lib/validation";
+import { validateString, stripControlChars } from "@/lib/validation";
 
 const MAX_MESSAGE_LENGTH = 10_000;
 
@@ -21,8 +21,9 @@ export async function POST(
     return NextResponse.json({ error: messageErr }, { status: 400 });
   }
 
-  const message = body!.message as string;
+  // Strip control characters to prevent injection when passed to shell-based runtimes
+  const message = stripControlChars(body!.message as string);
 
-  // TODO: wire to core SessionManager.send() — sanitize message before passing to shell-based runtimes
+  // TODO: wire to core SessionManager.send()
   return NextResponse.json({ ok: true, sessionId: id, message });
 }

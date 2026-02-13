@@ -32,3 +32,13 @@ export function validateIdentifier(
   }
   return null;
 }
+
+/**
+ * Strip control characters (U+0000–U+001F, U+007F–U+009F) from a string.
+ * Critical for messages that may be passed to shell-based runtimes (tmux send-keys, etc.)
+ * to prevent command injection via control sequences.
+ */
+export function stripControlChars(value: string): string {
+  // eslint-disable-next-line no-control-regex
+  return value.replace(/[\x00-\x1f\x7f-\x9f]/g, "");
+}

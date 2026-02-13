@@ -148,8 +148,13 @@ describe("getAttentionLevel", () => {
       expect(getAttentionLevel(session)).toBe("done");
     });
 
-    it("returns done when agent has exited with no PR", () => {
+    it("returns urgent when agent has exited unexpectedly (non-terminal status)", () => {
       const session = makeSession({ status: "working", activity: "exited", pr: null });
+      expect(getAttentionLevel(session)).toBe("urgent");
+    });
+
+    it("returns done when agent has exited with cleanup status", () => {
+      const session = makeSession({ status: "cleanup", activity: "exited", pr: null });
       expect(getAttentionLevel(session)).toBe("done");
     });
   });

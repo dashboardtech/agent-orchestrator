@@ -123,10 +123,27 @@ export function getAttentionLevel(session: DashboardSession): AttentionLevel {
     return "urgent";
   }
 
-  // Issue #11: check status-based CI/changes states before checking PR,
-  // so sessions with status "ci_failed" but pr: null still map to urgent.
+  // Status-based CI/changes states (even without PR data)
   if (session.status === "ci_failed" || session.status === "changes_requested") {
     return "urgent";
+  }
+
+  // Grey zone: terminal states
+  if (session.status === "merged" || session.status === "killed" || session.status === "cleanup") {
+    return "done";
+  }
+
+  // Exited agent: only "done" if status is terminal, otherwise urgent (crashed agent)
+  if (session.activity === "exited") {
+    return "urgent";
+  }
+
+  // Status-based mappings for sessions without PR data
+  if (session.status === "mergeable" || session.status === "approved") {
+    return session.pr ? "action" : "action";
+  }
+  if (session.status === "review_pending") {
+    return "warning";
   }
 
   // Check PR-related states
@@ -134,7 +151,7 @@ export function getAttentionLevel(session: DashboardSession): AttentionLevel {
     const pr = session.pr;
 
     // Grey zone: done
-    if (pr.state === "merged" || session.status === "merged") {
+    if (pr.state === "merged") {
       return "done";
     }
 
@@ -157,11 +174,6 @@ export function getAttentionLevel(session: DashboardSession): AttentionLevel {
     }
   }
 
-  // Grey zone: completed
-  if (session.status === "merged" || session.status === "killed" || session.activity === "exited") {
-    return "done";
-  }
-
-  // Green zone: working normally
+  // Green zone: working normally (spawning, working, pr_open with no issues)
   return "ok";
 }

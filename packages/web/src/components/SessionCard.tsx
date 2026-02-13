@@ -88,7 +88,7 @@ export function SessionCard({ session, onSend, onKill, onMerge }: SessionCardPro
           </button>
         )}
         <a
-          href={`/sessions/${session.id}`}
+          href={`/sessions/${encodeURIComponent(session.id)}`}
           onClick={(e) => e.stopPropagation()}
           className="shrink-0 rounded-md border border-[var(--color-border-default)] px-2.5 py-0.5 text-[11px] text-[var(--color-text-secondary)] transition-colors hover:border-[var(--color-accent-blue)] hover:text-[var(--color-accent-blue)]"
         >

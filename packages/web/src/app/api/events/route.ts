@@ -42,6 +42,7 @@ export async function GET(): Promise<Response> {
       // Simulate activity updates every 5 seconds
       updates = setInterval(() => {
         try {
+          if (mockSessions.length === 0) return;
           const randomSession = mockSessions[Math.floor(Math.random() * mockSessions.length)];
           const event = {
             type: "session.activity",
