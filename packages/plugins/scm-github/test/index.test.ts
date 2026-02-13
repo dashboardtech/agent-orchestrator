@@ -432,7 +432,7 @@ describe("scm-github plugin", () => {
       };
     }
 
-    it("returns non-bot comments with isResolved from GraphQL", async () => {
+    it("returns only unresolved non-bot comments from GraphQL", async () => {
       mockGh(
         makeGraphQLThreads([
           { isResolved: false, id: "C1", author: "alice", body: "Fix line 10", path: "src/foo.ts", line: 10, url: "https://github.com/c/1", createdAt: "2025-01-01T00:00:00Z" },
@@ -441,9 +441,8 @@ describe("scm-github plugin", () => {
       );
 
       const comments = await scm.getPendingComments(pr);
-      expect(comments).toHaveLength(2);
+      expect(comments).toHaveLength(1);
       expect(comments[0]).toMatchObject({ id: "C1", author: "alice", isResolved: false });
-      expect(comments[1]).toMatchObject({ id: "C2", author: "bob", isResolved: true });
     });
 
     it("filters out bot comments", async () => {

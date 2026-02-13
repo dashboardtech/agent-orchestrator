@@ -370,6 +370,7 @@ function createGitHubSCM(): SCM {
 
         return threads
           .filter((t) => {
+            if (t.isResolved) return false; // only pending (unresolved) threads
             const c = t.comments.nodes[0];
             if (!c) return false; // skip threads with no comments
             const author = c.author?.login ?? "";
