@@ -95,7 +95,7 @@ export function SessionCard({ session, onSend, onKill, onMerge }: SessionCardPro
       </div>
 
       {/* Alert tags */}
-      {alerts.length > 0 && (
+      {(alerts.length > 0 || isReadyToMerge) && (
         <div className="flex flex-wrap items-center gap-1.5 px-4 pb-2 pl-[42px]">
           {isReadyToMerge ? (
             <button
