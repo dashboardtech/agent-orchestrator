@@ -1,12 +1,13 @@
-import type {
-  Agent,
-  AgentIntrospection,
-  AgentLaunchConfig,
-  ActivityState,
-  CostEstimate,
-  PluginModule,
-  RuntimeHandle,
-  Session,
+import {
+  shellEscape,
+  type Agent,
+  type AgentIntrospection,
+  type AgentLaunchConfig,
+  type ActivityState,
+  type CostEstimate,
+  type PluginModule,
+  type RuntimeHandle,
+  type Session,
 } from "@agent-orchestrator/core";
 import { execFile } from "node:child_process";
 import { readdir, readFile, stat } from "node:fs/promises";
@@ -195,18 +196,6 @@ function extractCost(lines: JsonlLine[]): CostEstimate | undefined {
   }
 
   return { inputTokens, outputTokens, estimatedCostUsd: totalCost };
-}
-
-// =============================================================================
-// Shell Escaping
-// =============================================================================
-
-/**
- * POSIX-safe shell escaping: wraps value in single quotes,
- * escaping any embedded single quotes as '\'' .
- */
-function shellEscape(arg: string): string {
-  return "'" + arg.replace(/'/g, "'\\''") + "'";
 }
 
 // =============================================================================

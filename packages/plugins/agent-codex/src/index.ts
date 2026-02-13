@@ -1,11 +1,12 @@
-import type {
-  Agent,
-  AgentIntrospection,
-  AgentLaunchConfig,
-  ActivityState,
-  PluginModule,
-  RuntimeHandle,
-  Session,
+import {
+  shellEscape,
+  type Agent,
+  type AgentIntrospection,
+  type AgentLaunchConfig,
+  type ActivityState,
+  type PluginModule,
+  type RuntimeHandle,
+  type Session,
 } from "@agent-orchestrator/core";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
@@ -26,14 +27,6 @@ export const manifest = {
 // =============================================================================
 // Agent Implementation
 // =============================================================================
-
-/**
- * POSIX-safe shell escaping: wraps value in single quotes,
- * escaping any embedded single quotes as '\'' .
- */
-function shellEscape(arg: string): string {
-  return "'" + arg.replace(/'/g, "'\\''") + "'";
-}
 
 function createCodexAgent(): Agent {
   return {
