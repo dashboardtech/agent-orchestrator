@@ -18,9 +18,17 @@ async function checkPRReviews(
 ): Promise<{ pendingComments: number; reviewDecision: string | null }> {
   const [owner, name] = repo.split("/");
 
-  // Use GraphQL to get review decision and count only unresolved threads
-  const query = `query { repository(owner: "${owner}", name: "${name}") { pullRequest(number: ${prNumber}) { reviewDecision reviewThreads(first: 100) { nodes { isResolved } } } } }`;
-  const result = await gh(["api", "graphql", "-f", `query=${query}`, "--jq", ".data.repository.pullRequest"]);
+  // Use GraphQL with variable passing (-F) to avoid injection via repo names
+  const query =
+    "query($owner:String!,$name:String!,$pr:Int!){repository(owner:$owner,name:$name){pullRequest(number:$pr){reviewDecision reviewThreads(first:100){nodes{isResolved}}}}}";
+  const result = await gh([
+    "api", "graphql",
+    "-f", `query=${query}`,
+    "-F", `owner=${owner}`,
+    "-F", `name=${name}`,
+    "-F", `pr=${prNumber}`,
+    "--jq", ".data.repository.pullRequest",
+  ]);
 
   if (!result) {
     return { pendingComments: 0, reviewDecision: null };

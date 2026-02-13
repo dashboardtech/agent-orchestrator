@@ -111,7 +111,7 @@ async function spawnSession(
     spinner.text = "Creating tmux session";
 
     // Create tmux session
-    const envVar = `${prefix.toUpperCase()}_SESSION`;
+    const envVar = `${prefix.toUpperCase().replace(/[^A-Z0-9_]/g, "_")}_SESSION`;
     await exec("tmux", [
       "new-session",
       "-d",
