@@ -112,13 +112,25 @@ async function gatherSessionInfo(
     claudeSummary = introspection?.summary ?? null;
 
     // Detect activity from agent's last message type
-    if (introspection?.lastMessageType === "summary") {
+    const msgType = introspection?.lastMessageType;
+    if (msgType === "summary" || msgType === "assistant" || msgType === "result") {
       activity = "idle";
-    } else if (introspection?.lastMessageType) {
+    } else if (msgType === "tool_use" || msgType === "user") {
       activity = "active";
     }
   } catch {
     // Introspection failed — not critical
+  }
+
+  // Fall back to metadata status for activity when introspection is unavailable
+  if (activity === null && status) {
+    const statusToActivity: Record<string, ActivityState> = {
+      working: "active",
+      idle: "idle",
+      stuck: "blocked",
+      errored: "blocked",
+    };
+    activity = statusToActivity[status] ?? null;
   }
 
   // Fetch PR, CI, and review data from SCM
@@ -126,6 +138,14 @@ async function gatherSessionInfo(
   let ciStatus: CIStatus | null = null;
   let reviewDecision: ReviewDecision | null = null;
   let pendingThreads: number | null = null;
+
+  // Extract PR number from metadata URL as fallback
+  if (prUrl) {
+    const prMatch = /\/pull\/(\d+)/.exec(prUrl);
+    if (prMatch) {
+      prNumber = parseInt(prMatch[1], 10);
+    }
+  }
 
   if (branch) {
     try {
@@ -138,12 +158,12 @@ async function gatherSessionInfo(
         const [ci, review, threads] = await Promise.all([
           scm.getCISummary(prInfo).catch(() => null),
           scm.getReviewDecision(prInfo).catch(() => null),
-          scm.getPendingComments(prInfo).catch(() => []),
+          scm.getPendingComments(prInfo).catch(() => null),
         ]);
 
         ciStatus = ci;
         reviewDecision = review;
-        pendingThreads = threads ? threads.length : null;
+        pendingThreads = threads !== null ? threads.length : null;
       }
     } catch {
       // SCM lookup failed — not critical, we still show what we have

@@ -405,4 +405,119 @@ describe("status command", () => {
     expect(parsed[0].reviewDecision).toBe("pending");
     expect(parsed[0].pendingThreads).toBe(0);
   });
+
+  it("falls back to PR number from metadata URL when SCM fails", async () => {
+    const sessionDir = join(tmpDir, "my-app-sessions");
+    mkdirSync(sessionDir, { recursive: true });
+    writeFileSync(
+      join(sessionDir, "app-1"),
+      "worktree=/tmp/wt\nbranch=feat/pr-meta\nstatus=working\npr=https://github.com/org/repo/pull/99\n",
+    );
+
+    mockTmux.mockImplementation(async (...args: string[]) => {
+      if (args[0] === "list-sessions") return "app-1";
+      if (args[0] === "display-message") return null;
+      return null;
+    });
+    mockGit.mockResolvedValue("feat/pr-meta");
+
+    // SCM detectPR fails
+    mockDetectPR.mockRejectedValue(new Error("gh failed"));
+
+    await program.parseAsync(["node", "test", "status"]);
+
+    const output = consoleSpy.mock.calls.map((c) => c[0]).join("\n");
+    expect(output).toContain("#99");
+  });
+
+  it("shows null pendingThreads when getPendingComments fails", async () => {
+    const sessionDir = join(tmpDir, "my-app-sessions");
+    mkdirSync(sessionDir, { recursive: true });
+    writeFileSync(
+      join(sessionDir, "app-1"),
+      "worktree=/tmp/wt\nbranch=feat/thr-err\nstatus=working\n",
+    );
+
+    mockTmux.mockImplementation(async (...args: string[]) => {
+      if (args[0] === "list-sessions") return "app-1";
+      if (args[0] === "display-message") return String(Math.floor(Date.now() / 1000));
+      return null;
+    });
+    mockGit.mockResolvedValue("feat/thr-err");
+
+    mockDetectPR.mockResolvedValue({
+      number: 5,
+      url: "https://github.com/org/repo/pull/5",
+      title: "Thread err PR",
+      owner: "org",
+      repo: "repo",
+      branch: "feat/thr-err",
+      baseBranch: "main",
+      isDraft: false,
+    });
+    mockGetCISummary.mockResolvedValue("passing");
+    mockGetReviewDecision.mockResolvedValue("none");
+    // getPendingComments rejects — should result in null, not 0
+    mockGetPendingComments.mockRejectedValue(new Error("graphql failed"));
+
+    await program.parseAsync(["node", "test", "status", "--json"]);
+
+    const jsonCalls = consoleSpy.mock.calls.map((c) => c[0]).join("");
+    const parsed = JSON.parse(jsonCalls);
+    expect(parsed[0].pendingThreads).toBeNull();
+  });
+
+  it("falls back to metadata status for activity when introspection unavailable", async () => {
+    const sessionDir = join(tmpDir, "my-app-sessions");
+    mkdirSync(sessionDir, { recursive: true });
+    writeFileSync(
+      join(sessionDir, "app-1"),
+      "worktree=/tmp/wt\nbranch=feat/meta-act\nstatus=working\n",
+    );
+
+    mockTmux.mockImplementation(async (...args: string[]) => {
+      if (args[0] === "list-sessions") return "app-1";
+      if (args[0] === "display-message") return String(Math.floor(Date.now() / 1000));
+      return null;
+    });
+    mockGit.mockResolvedValue("feat/meta-act");
+
+    // Introspection returns null (no session info)
+    mockIntrospect.mockResolvedValue(null);
+
+    await program.parseAsync(["node", "test", "status", "--json"]);
+
+    const jsonCalls = consoleSpy.mock.calls.map((c) => c[0]).join("");
+    const parsed = JSON.parse(jsonCalls);
+    // status=working should fall back to activity=active
+    expect(parsed[0].activity).toBe("active");
+  });
+
+  it("treats assistant lastMessageType as idle, not active", async () => {
+    const sessionDir = join(tmpDir, "my-app-sessions");
+    mkdirSync(sessionDir, { recursive: true });
+    writeFileSync(
+      join(sessionDir, "app-1"),
+      "worktree=/tmp/wt\nbranch=feat/asst\nstatus=working\n",
+    );
+
+    mockTmux.mockImplementation(async (...args: string[]) => {
+      if (args[0] === "list-sessions") return "app-1";
+      if (args[0] === "display-message") return String(Math.floor(Date.now() / 1000));
+      return null;
+    });
+    mockGit.mockResolvedValue("feat/asst");
+
+    mockIntrospect.mockResolvedValue({
+      summary: "Working on feature",
+      agentSessionId: "abc",
+      lastMessageType: "assistant",
+    });
+
+    await program.parseAsync(["node", "test", "status", "--json"]);
+
+    const jsonCalls = consoleSpy.mock.calls.map((c) => c[0]).join("");
+    const parsed = JSON.parse(jsonCalls);
+    expect(parsed[0].activity).toBe("idle");
+  });
 });
