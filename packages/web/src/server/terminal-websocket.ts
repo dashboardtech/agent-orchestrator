@@ -17,6 +17,7 @@ import { spawn, type ChildProcess } from "node:child_process";
 import { createServer, request } from "node:http";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
+import { loadConfig } from "@agent-orchestrator/core";
 
 interface TtydInstance {
   sessionId: string;
@@ -25,8 +26,12 @@ interface TtydInstance {
 }
 
 const instances = new Map<string, TtydInstance>();
+const availablePorts = new Set<number>(); // Pool of recycled ports
 let nextPort = 7800; // Start ttyd instances from port 7800
 const MAX_PORT = 7900; // Prevent unbounded port allocation
+
+// Load config once at startup
+const config = loadConfig();
 
 /**
  * Check if ttyd is ready to accept connections by making a test request.
@@ -101,12 +106,20 @@ function getOrSpawnTtyd(sessionId: string): TtydInstance {
   const existing = instances.get(sessionId);
   if (existing) return existing;
 
-  // Prevent port exhaustion
-  if (nextPort >= MAX_PORT) {
-    throw new Error(`Port exhaustion: reached maximum of ${MAX_PORT - 7800} terminal instances`);
+  // Allocate port: reuse from pool if available, otherwise increment
+  let port: number;
+  if (availablePorts.size > 0) {
+    // Reuse a recycled port
+    port = availablePorts.values().next().value as number;
+    availablePorts.delete(port);
+  } else {
+    // Allocate new port
+    if (nextPort >= MAX_PORT) {
+      throw new Error(`Port exhaustion: reached maximum of ${MAX_PORT - 7800} terminal instances`);
+    }
+    port = nextPort++;
   }
 
-  const port = nextPort++;
   console.log(`[Terminal] Spawning ttyd for ${sessionId} on port ${port}`);
 
   // Enable mouse mode so scroll works as scrollback, not input cycling
@@ -142,12 +155,16 @@ function getOrSpawnTtyd(sessionId: string): TtydInstance {
   proc.once("exit", (code) => {
     console.log(`[Terminal] ttyd ${sessionId} exited with code ${code}`);
     instances.delete(sessionId);
+    // Recycle port for reuse
+    availablePorts.add(port);
   });
 
   proc.once("error", (err) => {
     console.error(`[Terminal] ttyd ${sessionId} error:`, err.message);
     // Clean up instance on spawn error to prevent leak
     instances.delete(sessionId);
+    // Recycle port for reuse
+    availablePorts.add(port);
     // Kill any running process
     try {
       proc.kill();
@@ -165,12 +182,21 @@ function getOrSpawnTtyd(sessionId: string): TtydInstance {
 const server = createServer(async (req, res) => {
   const url = new URL(req.url ?? "/", "http://localhost");
 
-  // CORS for dashboard - restrict to localhost and common dev hosts
+  // CORS for dashboard - allow requests from the same host as the dashboard
   // TODO: Replace with proper session-based authentication
   const origin = req.headers.origin;
-  const allowedOrigins = ["http://localhost:3000", "http://localhost:9847", "http://127.0.0.1:3000", "http://127.0.0.1:9847"];
-  if (origin && allowedOrigins.includes(origin)) {
-    res.setHeader("Access-Control-Allow-Origin", origin);
+  if (origin) {
+    // Extract hostname from origin and compare with request host
+    try {
+      const originUrl = new URL(origin);
+      const requestHost = req.headers.host;
+      // Allow if origin hostname matches request host (supports remote deployments)
+      if (requestHost && originUrl.hostname === requestHost.split(":")[0]) {
+        res.setHeader("Access-Control-Allow-Origin", origin);
+      }
+    } catch {
+      // Invalid origin URL, don't set CORS header
+    }
   }
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
@@ -190,10 +216,8 @@ const server = createServer(async (req, res) => {
       return;
     }
 
-    // Validate session exists before spawning ttyd
-    // TODO: Load config properly instead of hardcoded path
-    const dataDir = process.env.DATA_DIR ?? join(process.env.HOME ?? "~", ".agent-orchestrator");
-    const sessionPath = join(dataDir, sessionId);
+    // Validate session exists before spawning ttyd using configured dataDir
+    const sessionPath = join(config.dataDir, sessionId);
     if (!existsSync(sessionPath)) {
       res.writeHead(404, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ error: "Session not found" }));

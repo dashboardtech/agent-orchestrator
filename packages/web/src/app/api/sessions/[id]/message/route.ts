@@ -55,7 +55,7 @@ export async function POST(
       );
     }
 
-    const { sessionManager, config, registry } = await getServices();
+    const { sessionManager, registry } = await getServices();
     const session = await sessionManager.get(id);
 
     if (!session) {
@@ -66,21 +66,12 @@ export async function POST(
       return NextResponse.json({ error: "Session has no runtime handle" }, { status: 400 });
     }
 
-    // Get the runtime plugin for this session's project
-    const project = config.projects[session.projectId];
-    if (!project) {
-      return NextResponse.json({ error: "Project not found" }, { status: 404 });
-    }
-
-    // Use project runtime or fall back to defaults
-    const runtimeName = project.runtime ?? config.defaults?.runtime;
-    if (!runtimeName) {
-      return NextResponse.json({ error: "Project has no runtime configured" }, { status: 500 });
-    }
-
+    // Get the runtime plugin that was used to create this session
+    // Use the runtime from the session handle, not from current project config
+    const runtimeName = session.runtimeHandle.runtimeName;
     const runtime = registry.get<Runtime>("runtime", runtimeName);
     if (!runtime) {
-      return NextResponse.json({ error: "Runtime plugin not found" }, { status: 500 });
+      return NextResponse.json({ error: `Runtime plugin '${runtimeName}' not found` }, { status: 500 });
     }
 
     try {
