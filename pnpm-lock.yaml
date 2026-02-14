@@ -94,6 +94,9 @@ importers:
       '@agent-orchestrator/plugin-runtime-tmux':
         specifier: workspace:*
         version: link:../plugins/runtime-tmux
+      '@agent-orchestrator/plugin-tracker-linear':
+        specifier: workspace:*
+        version: link:../plugins/tracker-linear
       '@agent-orchestrator/plugin-workspace-clone':
         specifier: workspace:*
         version: link:../plugins/workspace-clone
