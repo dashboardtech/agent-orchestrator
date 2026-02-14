@@ -11,6 +11,7 @@ interface SessionCardProps {
   onSend?: (sessionId: string, message: string) => void;
   onKill?: (sessionId: string) => void;
   onMerge?: (prNumber: number) => void;
+  onRestore?: (sessionId: string) => void;
 }
 
 const activityIcon: Record<string, string> = {
@@ -22,14 +23,15 @@ const activityIcon: Record<string, string> = {
 };
 
 const borderColorByLevel: Record<AttentionLevel, string> = {
-  urgent: "border-l-[var(--color-accent-red)]",
-  action: "border-l-[var(--color-accent-orange)]",
-  warning: "border-l-[var(--color-accent-yellow)]",
-  ok: "border-l-[var(--color-accent-green)]",
+  merge: "border-l-[var(--color-accent-green)]",
+  respond: "border-l-[var(--color-accent-red)]",
+  review: "border-l-[var(--color-accent-orange)]",
+  pending: "border-l-[var(--color-accent-yellow)]",
+  working: "border-l-[var(--color-accent-blue)]",
   done: "border-l-[var(--color-border-default)]",
 };
 
-export function SessionCard({ session, onSend, onKill, onMerge }: SessionCardProps) {
+export function SessionCard({ session, onSend, onKill, onMerge, onRestore }: SessionCardProps) {
   const [expanded, setExpanded] = useState(false);
   const [sendingAction, setSendingAction] = useState<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -51,6 +53,11 @@ export function SessionCard({ session, onSend, onKill, onMerge }: SessionCardPro
 
   const alerts = getAlerts(session);
   const isReadyToMerge = pr?.mergeability.mergeable && pr.state === "open";
+  const isRestorable =
+    (session.status === "killed" ||
+      session.status === "cleanup" ||
+      session.activity === "exited") &&
+    session.status !== "merged";
 
   return (
     <div
@@ -83,23 +90,36 @@ export function SessionCard({ session, onSend, onKill, onMerge }: SessionCardPro
         <span className="min-w-0 flex-1 truncate text-sm font-medium text-[var(--color-text-primary)]">
           {pr?.title ?? session.summary ?? session.status}
         </span>
-        {session.activity === "exited" && (
+        {isRestorable && (
           <button
             onClick={(e) => {
               e.stopPropagation();
-              onKill?.(session.id);
+              onRestore?.(session.id);
             }}
-            className="shrink-0 rounded-md border border-[rgba(248,81,73,0.4)] px-2.5 py-0.5 text-[11px] text-[var(--color-accent-red)] transition-colors hover:bg-[rgba(248,81,73,0.15)]"
+            className="shrink-0 rounded-md border border-[rgba(88,166,255,0.4)] px-2.5 py-0.5 text-[11px] text-[var(--color-accent-blue)] transition-colors hover:bg-[rgba(88,166,255,0.15)]"
           >
-            kill session
+            restore session
           </button>
         )}
+        {session.activity === "exited" &&
+          session.status !== "killed" &&
+          session.status !== "cleanup" && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onKill?.(session.id);
+              }}
+              className="shrink-0 rounded-md border border-[rgba(248,81,73,0.4)] px-2.5 py-0.5 text-[11px] text-[var(--color-accent-red)] transition-colors hover:bg-[rgba(248,81,73,0.15)]"
+            >
+              kill session
+            </button>
+          )}
         <a
           href={`/sessions/${encodeURIComponent(session.id)}`}
           onClick={(e) => e.stopPropagation()}
           className="shrink-0 rounded-md border border-[var(--color-border-default)] px-2.5 py-0.5 text-[11px] text-[var(--color-text-secondary)] transition-colors hover:border-[var(--color-accent-blue)] hover:text-[var(--color-accent-blue)]"
         >
-          details
+          terminal
         </a>
       </div>
 
@@ -235,15 +255,27 @@ export function SessionCard({ session, onSend, onKill, onMerge }: SessionCardPro
           )}
 
           <div className="mt-3 flex gap-2 border-t border-[var(--color-border-muted)] pt-3">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onKill?.(session.id);
-              }}
-              className="rounded-md border border-[rgba(248,81,73,0.4)] px-2.5 py-0.5 text-[11px] text-[var(--color-accent-red)] transition-colors hover:bg-[rgba(248,81,73,0.15)]"
-            >
-              terminate session
-            </button>
+            {isRestorable ? (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onRestore?.(session.id);
+                }}
+                className="rounded-md border border-[rgba(88,166,255,0.4)] px-2.5 py-0.5 text-[11px] text-[var(--color-accent-blue)] transition-colors hover:bg-[rgba(88,166,255,0.15)]"
+              >
+                restore session
+              </button>
+            ) : (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onKill?.(session.id);
+                }}
+                className="rounded-md border border-[rgba(248,81,73,0.4)] px-2.5 py-0.5 text-[11px] text-[var(--color-accent-red)] transition-colors hover:bg-[rgba(248,81,73,0.15)]"
+              >
+                terminate session
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -302,7 +334,10 @@ function getAlerts(session: DashboardSession): Alert[] {
         "border-[rgba(248,81,73,0.3)] bg-[rgba(248,81,73,0.15)] text-[var(--color-accent-red)]",
       url: pr.url,
     });
-  } else if (pr.reviewDecision === "pending" || pr.reviewDecision === "none") {
+  } else if (
+    !pr.isDraft &&
+    (pr.reviewDecision === "pending" || pr.reviewDecision === "none")
+  ) {
     alerts.push({
       key: "review",
       label: "needs review",

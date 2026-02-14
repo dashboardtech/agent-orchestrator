@@ -26,8 +26,17 @@ import type {
   ReviewDecision,
 } from "@agent-orchestrator/core";
 
-/** Attention zone priority level */
-export type AttentionLevel = "urgent" | "action" | "warning" | "ok" | "done";
+/**
+ * Attention zone priority level, ordered by human action urgency:
+ *
+ * 1. merge   — PR approved + CI green. One click to clear. Highest ROI.
+ * 2. respond — Agent waiting for human input. Quick unblock, agent resumes.
+ * 3. review  — CI failed, changes requested, conflicts. Needs investigation.
+ * 4. pending — Waiting on external (reviewer, CI). Nothing to do right now.
+ * 5. working — Agents doing their thing. Don't interrupt.
+ * 6. done    — Merged or terminated. Archive.
+ */
+export type AttentionLevel = "merge" | "respond" | "review" | "pending" | "working" | "done";
 
 /**
  * Flattened session for dashboard rendering.
@@ -126,81 +135,67 @@ export interface SSEActivityEvent {
   timestamp: string;
 }
 
-/** Union of all SSE events from /api/events */
-export type SSEEvent = SSESnapshotEvent | SSEActivityEvent;
-
 /** Determines which attention zone a session belongs to */
 export function getAttentionLevel(session: DashboardSession): AttentionLevel {
-  // Red zone: URGENT — needs human input
+  // ── Done: terminal states ─────────────────────────────────────────
+  if (session.status === "merged" || session.status === "killed" || session.status === "cleanup") {
+    return "done";
+  }
+  if (session.pr) {
+    if (session.pr.state === "merged" || session.pr.state === "closed") {
+      return "done";
+    }
+  }
+
+  // ── Merge: PR is ready — one click to clear ───────────────────────
+  // Check this early: if the PR is mergeable, that's the most valuable
+  // action for the human regardless of agent activity.
+  if (session.status === "mergeable" || session.status === "approved") {
+    return "merge";
+  }
+  if (session.pr?.mergeability.mergeable) {
+    return "merge";
+  }
+
+  // ── Respond: agent is waiting for human input ─────────────────────
   if (session.activity === "waiting_input" || session.activity === "blocked") {
-    return "urgent";
+    return "respond";
   }
   if (
     session.status === "needs_input" ||
     session.status === "stuck" ||
     session.status === "errored"
   ) {
-    return "urgent";
+    return "respond";
   }
-
-  // Status-based CI/changes states (even without PR data)
-  if (session.status === "ci_failed" || session.status === "changes_requested") {
-    return "urgent";
-  }
-
-  // Grey zone: terminal states
-  if (session.status === "merged" || session.status === "killed" || session.status === "cleanup") {
-    return "done";
-  }
-
-  // Exited agent: only "done" if status is terminal, otherwise urgent (crashed agent)
+  // Exited agent with non-terminal status = crashed, needs human attention
   if (session.activity === "exited") {
-    return "urgent";
+    return "respond";
   }
 
-  // Status-based mappings
-  if (session.status === "mergeable" || session.status === "approved") {
-    return "action";
+  // ── Review: problems that need investigation ──────────────────────
+  if (session.status === "ci_failed" || session.status === "changes_requested") {
+    return "review";
   }
-  if (session.status === "review_pending") {
-    return "warning";
-  }
-
-  // Check PR-related states
   if (session.pr) {
     const pr = session.pr;
+    if (pr.ciStatus === "failing") return "review";
+    if (pr.reviewDecision === "changes_requested") return "review";
+    if (!pr.mergeability.noConflicts) return "review";
+  }
 
-    // Grey zone: done
-    if (pr.state === "merged" || pr.state === "closed") {
-      return "done";
-    }
-
-    // Red zone: CI failed, changes requested, or merge conflicts
-    if (pr.ciStatus === "failing") {
-      return "urgent";
-    }
-    if (pr.reviewDecision === "changes_requested" || !pr.mergeability.noConflicts) {
-      return "urgent";
-    }
-
-    // Orange zone: ACTION — PRs ready to merge
-    if (pr.mergeability.mergeable) {
-      return "action";
-    }
-
-    // Yellow zone: WARNING — needs review, auto-fix failed
-    // Draft PRs with "none" review are still being worked on → skip to ok
-    if (pr.unresolvedThreads > 0) {
-      return "warning";
-    }
-    if (
-      !pr.isDraft &&
-      (pr.reviewDecision === "pending" || pr.reviewDecision === "none")
-    ) {
-      return "warning";
+  // ── Pending: waiting on external (reviewer, CI) ───────────────────
+  if (session.status === "review_pending") {
+    return "pending";
+  }
+  if (session.pr) {
+    const pr = session.pr;
+    if (pr.unresolvedThreads > 0) return "pending";
+    if (!pr.isDraft && (pr.reviewDecision === "pending" || pr.reviewDecision === "none")) {
+      return "pending";
     }
   }
 
-  // Green zone: working normally (spawning, working, pr_open with no issues)
-  return "ok";
+  // ── Working: agents doing their thing ─────────────────────────────
+  return "working";
 }

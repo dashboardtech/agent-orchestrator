@@ -68,18 +68,22 @@ export function PRTableRow({ pr }: PRTableRowProps) {
   const sizeLabel = getSizeLabel(pr.additions, pr.deletions);
 
   const reviewLabel =
-    pr.reviewDecision === "approved"
-      ? "approved"
-      : pr.reviewDecision === "changes_requested"
-        ? "changes requested"
-        : "needs review";
+    pr.isDraft
+      ? "draft"
+      : pr.reviewDecision === "approved"
+        ? "approved"
+        : pr.reviewDecision === "changes_requested"
+          ? "changes requested"
+          : "needs review";
 
   const reviewClass =
-    pr.reviewDecision === "approved"
-      ? "text-[var(--color-accent-green)]"
-      : pr.reviewDecision === "changes_requested"
-        ? "text-[var(--color-accent-red)]"
-        : "text-[var(--color-accent-yellow)]";
+    pr.isDraft
+      ? "text-[var(--color-text-muted)]"
+      : pr.reviewDecision === "approved"
+        ? "text-[var(--color-accent-green)]"
+        : pr.reviewDecision === "changes_requested"
+          ? "text-[var(--color-accent-red)]"
+          : "text-[var(--color-accent-yellow)]";
 
   return (
     <tr className="border-b border-[var(--color-border-muted)] hover:bg-[rgba(88,166,255,0.03)]">
