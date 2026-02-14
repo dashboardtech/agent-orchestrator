@@ -2,7 +2,7 @@
  * WebSocket server for interactive terminal sessions.
  *
  * Runs alongside Next.js on port 3001.
- * Provides bidirectional streaming for tmux sessions.
+ * Uses tmux control mode for true incremental streaming (not polling).
  */
 
 import { WebSocketServer, WebSocket } from "ws";
@@ -12,7 +12,17 @@ import { createServer } from "node:http";
 interface TerminalSession {
   sessionId: string;
   ws: WebSocket;
-  captureProcess: ChildProcess | null;
+  tmuxProcess: ChildProcess | null;
+}
+
+/**
+ * Unescape octal sequences from tmux control mode output.
+ * Example: "Hello\040World" -> "Hello World"
+ */
+function unescapeOctal(str: string): string {
+  return str.replace(/\\(\d{3})/g, (_, octal) =>
+    String.fromCharCode(parseInt(octal, 8))
+  );
 }
 
 const sessions = new Map<string, TerminalSession>();
@@ -41,112 +51,107 @@ wss.on("connection", (ws, req) => {
   const session: TerminalSession = {
     sessionId,
     ws,
-    captureProcess: null,
+    tmuxProcess: null,
   };
 
   sessions.set(sessionId, session);
 
-  let lastContent = "";
+  console.log(`[WebSocket] Starting tmux control mode for ${sessionId}`);
 
-  // Poll tmux capture-pane every 100ms for real-time updates
-  const pollOutput = () => {
-    const captureProcess = spawn("tmux", [
-      "capture-pane",
-      "-t",
-      sessionId,
-      "-p",
-      "-e", // Include escape sequences
-      "-J", // Join wrapped lines
-      "-S",
-      "-200", // More scrollback for context
-    ]);
+  // Start tmux in control mode attached to existing session
+  const tmuxProcess = spawn("tmux", ["-C", "attach-session", "-t", sessionId]);
 
-    let output = "";
-    captureProcess.stdout?.on("data", (data: Buffer) => {
-      output += data.toString("utf-8");
-    });
+  session.tmuxProcess = tmuxProcess;
 
-    captureProcess.on("close", () => {
-      if (output && output !== lastContent && ws.readyState === WebSocket.OPEN) {
-        lastContent = output;
-        ws.send(output);
+  let buffer = "";
+
+  // Handle control mode output
+  tmuxProcess.stdout?.on("data", (chunk: Buffer) => {
+    buffer += chunk.toString("utf-8");
+    const lines = buffer.split("\n");
+    buffer = lines.pop() ?? ""; // Keep incomplete line in buffer
+
+    for (const line of lines) {
+      if (line.startsWith("%output")) {
+        // Parse: %output %<pane-id> <escaped-output>
+        const match = line.match(/^%output %\d+ (.*)$/);
+        if (match) {
+          const output = unescapeOctal(match[1]);
+          if (ws.readyState === WebSocket.OPEN) {
+            ws.send(output);
+          }
+        }
+      } else if (line.startsWith("%layout-change")) {
+        // Layout changed (e.g., pane resized)
+        console.log(`[WebSocket] Layout changed for ${sessionId}`);
+      } else if (line.startsWith("%exit")) {
+        // Session ended
+        console.log(`[WebSocket] Session ${sessionId} exited`);
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send("\r\n\r\n[Session exited]");
+          ws.close(1000, "Session ended");
+        }
+      } else if (line.startsWith("%error")) {
+        // Error from tmux
+        console.error(`[WebSocket] tmux error for ${sessionId}: ${line}`);
       }
-    });
+      // Ignore other control messages (%begin, %end, etc.)
+    }
+  });
 
-    captureProcess.on("error", (err) => {
-      console.error(`[WebSocket] Failed to capture pane for ${sessionId}:`, err.message);
-      clearInterval(pollInterval);
-      if (ws.readyState === WebSocket.OPEN) {
-        ws.close(1011, "Session capture failed");
-      }
-    });
-  };
+  tmuxProcess.stderr?.on("data", (data: Buffer) => {
+    console.error(`[WebSocket] tmux stderr for ${sessionId}:`, data.toString());
+  });
 
-  // Send initial snapshot
-  pollOutput();
+  tmuxProcess.on("exit", (code) => {
+    console.log(`[WebSocket] tmux process exited for ${sessionId} with code ${code}`);
+    if (ws.readyState === WebSocket.OPEN) {
+      ws.close(1000, "tmux process ended");
+    }
+  });
 
-  // Start polling - 100ms for lower latency
-  const pollInterval = setInterval(pollOutput, 100);
-
-  session.captureProcess = null; // Not using a persistent process anymore
+  tmuxProcess.on("error", (err) => {
+    console.error(`[WebSocket] tmux process error for ${sessionId}:`, err.message);
+    if (ws.readyState === WebSocket.OPEN) {
+      ws.close(1011, "tmux process failed");
+    }
+  });
 
   // Handle input from client
   ws.on("message", (message) => {
     const data = message.toString("utf-8");
 
-    // Parse message: could be input or control command
     try {
       const msg = JSON.parse(data) as { type: string; data?: string; cols?: number; rows?: number };
 
-      if (msg.type === "input" && msg.data) {
-        // Send input to tmux session
-        const sendProcess = spawn("tmux", [
-          "send-keys",
-          "-t",
-          sessionId,
-          "-l",
-          msg.data,
-        ]);
-
-        sendProcess.on("error", (err) => {
-          console.error(`[WebSocket] Failed to send keys:`, err);
-        });
+      if (msg.type === "input" && msg.data && tmuxProcess.stdin) {
+        // Send input via control mode stdin
+        // Use send-keys command with -l flag (literal) to prevent interpretation
+        const escaped = msg.data.replace(/'/g, "'\\''"); // Escape single quotes
+        tmuxProcess.stdin.write(`send-keys -t ${sessionId} -l '${escaped}'\n`);
       } else if (msg.type === "resize" && msg.cols && msg.rows) {
-        // Resize tmux pane to match terminal
+        // Resize via control mode stdin
         console.log(`[WebSocket] Resizing pane ${sessionId} to ${msg.cols}x${msg.rows}`);
-        const resizeProcess = spawn("tmux", [
-          "resize-pane",
-          "-t",
-          sessionId,
-          "-x",
-          String(msg.cols),
-          "-y",
-          String(msg.rows),
-        ]);
-
-        resizeProcess.on("error", (err) => {
-          console.error(`[WebSocket] Failed to resize:`, err.message);
-        });
-
-        resizeProcess.on("close", (code) => {
-          if (code === 0) {
-            console.log(`[WebSocket] Pane ${sessionId} resized successfully`);
-          }
-        });
+        if (tmuxProcess.stdin) {
+          tmuxProcess.stdin.write(
+            `resize-pane -t ${sessionId} -x ${msg.cols} -y ${msg.rows}\n`
+          );
+        }
       }
-    } catch {
-      // Not JSON, treat as raw input
-      const sendProcess = spawn("tmux", ["send-keys", "-t", sessionId, "-l", data]);
-      sendProcess.on("error", (err) => {
-        console.error(`[WebSocket] Failed to send keys:`, err);
-      });
+    } catch (err) {
+      console.error(`[WebSocket] Failed to parse message:`, err);
     }
   });
 
   // Handle disconnect
   ws.on("close", () => {
     console.log(`[WebSocket] Client disconnected from session: ${sessionId}`);
-    clearInterval(pollInterval);
+
+    // Kill tmux control mode process
+    if (tmuxProcess && !tmuxProcess.killed) {
+      tmuxProcess.kill();
+    }
+
     sessions.delete(sessionId);
   });
 });
