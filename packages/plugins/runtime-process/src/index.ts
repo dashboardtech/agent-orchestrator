@@ -42,6 +42,14 @@ export function create(): Runtime {
     async create(config: RuntimeCreateConfig): Promise<RuntimeHandle> {
       assertValidSessionId(config.sessionId);
 
+      const handleId = config.sessionId;
+
+      // Prevent duplicate session IDs — check BEFORE spawning to avoid
+      // leaking an orphan child process that is never stored or killed.
+      if (processes.has(handleId)) {
+        throw new Error(`Session "${handleId}" already exists — destroy it before re-creating`);
+      }
+
       // NOTE: shell:true is intentional — launchCommand comes from trusted YAML config
       // and may contain pipes, redirects, or other shell syntax.
       const child = spawn(config.launchCommand, {
@@ -50,14 +58,6 @@ export function create(): Runtime {
         stdio: ["pipe", "pipe", "pipe"],
         shell: true,
       });
-
-      const handleId = config.sessionId;
-
-      // Prevent duplicate session IDs — a second create with the same ID would
-      // orphan the first process by overwriting its map entry.
-      if (processes.has(handleId)) {
-        throw new Error(`Session "${handleId}" already exists — destroy it before re-creating`);
-      }
 
       // Wait for spawn success or error — avoids the race where setImmediate
       // resolves before an async error event fires, which would return a dangling handle.
@@ -96,9 +96,11 @@ export function create(): Runtime {
       child.stdout?.on("data", appendOutput);
       child.stderr?.on("data", appendOutput);
 
-      // Log exit — use once() to avoid listener leaks
+      // Log exit and auto-remove from map so the sessionId can be reused.
+      // Without this, exited sessions block future create() calls permanently.
       child.once("exit", () => {
         entry.outputBuffer.push(`[process exited with code ${child.exitCode}]`);
+        processes.delete(handleId);
       });
 
       // Handle late errors (process crashes after spawn)
