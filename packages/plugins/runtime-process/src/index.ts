@@ -25,7 +25,7 @@ function assertValidSessionId(id: string): void {
 }
 
 interface ProcessEntry {
-  process: ChildProcess;
+  process: ChildProcess | null;
   outputBuffer: string[];
   createdAt: number;
 }
@@ -51,7 +51,7 @@ export function create(): Runtime {
       }
 
       const entry: ProcessEntry = {
-        process: null as unknown as ChildProcess, // placeholder until spawn
+        process: null, // set after spawn — methods guard against null
         outputBuffer: [],
         createdAt: Date.now(),
       };
@@ -133,6 +133,11 @@ export function create(): Runtime {
       if (!entry) return;
 
       const child = entry.process;
+      if (!child) {
+        // Process hasn't spawned yet — just remove the reservation
+        processes.delete(handle.id);
+        return;
+      }
       if (child.exitCode === null && child.signalCode === null) {
         // Kill the entire process group (negative PID) so child commands
         // spawned by the shell are also terminated, not just the shell itself.
@@ -181,6 +186,9 @@ export function create(): Runtime {
       }
 
       const child = entry.process;
+      if (!child) {
+        throw new Error(`Process for session ${handle.id} is still spawning`);
+      }
       const stdin = child.stdin;
       if (!stdin || !stdin.writable) {
         throw new Error(`stdin not writable for session ${handle.id}`);
@@ -221,7 +229,7 @@ export function create(): Runtime {
 
     async isAlive(handle: RuntimeHandle): Promise<boolean> {
       const entry = processes.get(handle.id);
-      if (!entry) return false;
+      if (!entry || !entry.process) return false;
       return entry.process.exitCode === null && entry.process.signalCode === null;
     },
 
@@ -235,7 +243,7 @@ export function create(): Runtime {
 
     async getAttachInfo(handle: RuntimeHandle): Promise<AttachInfo> {
       const entry = processes.get(handle.id);
-      if (!entry || entry.process.exitCode !== null || entry.process.signalCode !== null) {
+      if (!entry || !entry.process || entry.process.exitCode !== null || entry.process.signalCode !== null) {
         return {
           type: "process",
           target: "",
