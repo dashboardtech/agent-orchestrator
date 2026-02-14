@@ -1,12 +1,17 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { getMockSession } from "@/lib/mock-data";
-import { validateString, stripControlChars } from "@/lib/validation";
+import { validateIdentifier, validateString, stripControlChars } from "@/lib/validation";
 
 const MAX_MESSAGE_LENGTH = 10_000;
 
 /** POST /api/sessions/:id/send — Send a message to a session */
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const idErr = validateIdentifier(id, "id");
+  if (idErr) {
+    return NextResponse.json({ error: idErr }, { status: 400 });
+  }
+
   const session = getMockSession(id);
   if (!session) {
     return NextResponse.json({ error: "Session not found" }, { status: 404 });
@@ -23,7 +28,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   // Re-validate after stripping — a control-char-only message becomes empty
   if (message.trim().length === 0) {
-    return NextResponse.json({ error: "message must not be empty after sanitization" }, { status: 400 });
+    return NextResponse.json(
+      { error: "message must not be empty after sanitization" },
+      { status: 400 },
+    );
   }
 
   // TODO: wire to core SessionManager.send()

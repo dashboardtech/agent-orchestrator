@@ -3,35 +3,90 @@ import { getAttentionLevel } from "@/lib/types";
 import { makeSession, makePR } from "./helpers";
 
 describe("getAttentionLevel", () => {
-  // ── URGENT (red zone) ──────────────────────────────────────────────
+  // ── MERGE (green zone — PRs ready to merge) ────────────────────────
 
-  describe("urgent zone", () => {
-    it("returns urgent when activity is waiting_input", () => {
+  describe("merge zone", () => {
+    it("returns merge when status is mergeable", () => {
+      const pr = makePR({
+        mergeability: {
+          mergeable: true,
+          ciPassing: true,
+          approved: true,
+          noConflicts: true,
+          blockers: [],
+        },
+      });
+      const session = makeSession({ status: "mergeable", activity: "idle", pr });
+      expect(getAttentionLevel(session)).toBe("merge");
+    });
+
+    it("returns merge when PR mergeability is true", () => {
+      const pr = makePR({
+        mergeability: {
+          mergeable: true,
+          ciPassing: true,
+          approved: true,
+          noConflicts: true,
+          blockers: [],
+        },
+      });
+      const session = makeSession({ status: "pr_open", activity: "idle", pr });
+      expect(getAttentionLevel(session)).toBe("merge");
+    });
+  });
+
+  // ── RESPOND (red zone — agent needs human input) ───────────────────
+
+  describe("respond zone", () => {
+    it("returns respond when activity is waiting_input", () => {
       const session = makeSession({ activity: "waiting_input" });
-      expect(getAttentionLevel(session)).toBe("urgent");
+      expect(getAttentionLevel(session)).toBe("respond");
     });
 
-    it("returns urgent when activity is blocked", () => {
+    it("returns respond when activity is blocked", () => {
       const session = makeSession({ activity: "blocked" });
-      expect(getAttentionLevel(session)).toBe("urgent");
+      expect(getAttentionLevel(session)).toBe("respond");
     });
 
-    it("returns urgent when status is needs_input", () => {
+    it("returns respond when status is needs_input", () => {
       const session = makeSession({ status: "needs_input", activity: "idle" });
-      expect(getAttentionLevel(session)).toBe("urgent");
+      expect(getAttentionLevel(session)).toBe("respond");
     });
 
-    it("returns urgent when status is stuck", () => {
+    it("returns respond when status is stuck", () => {
       const session = makeSession({ status: "stuck", activity: "idle" });
-      expect(getAttentionLevel(session)).toBe("urgent");
+      expect(getAttentionLevel(session)).toBe("respond");
     });
 
-    it("returns urgent when status is errored", () => {
+    it("returns respond when status is errored", () => {
       const session = makeSession({ status: "errored", activity: "idle" });
-      expect(getAttentionLevel(session)).toBe("urgent");
+      expect(getAttentionLevel(session)).toBe("respond");
     });
 
-    it("returns urgent when CI is failing", () => {
+    it("returns respond when agent has exited unexpectedly (non-terminal status)", () => {
+      const session = makeSession({ status: "working", activity: "exited", pr: null });
+      expect(getAttentionLevel(session)).toBe("respond");
+    });
+
+    it("merge takes priority over respond (mergeable PR + blocked agent)", () => {
+      const pr = makePR({
+        mergeability: {
+          mergeable: true,
+          ciPassing: true,
+          approved: true,
+          noConflicts: true,
+          blockers: [],
+        },
+      });
+      const session = makeSession({ status: "mergeable", activity: "blocked", pr });
+      expect(getAttentionLevel(session)).toBe("merge");
+    });
+  });
+
+  // ── REVIEW (orange zone — needs investigation) ─────────────────────
+
+  describe("review zone", () => {
+    it("returns review when CI is failing", () => {
       const pr = makePR({
         ciStatus: "failing",
         ciChecks: [{ name: "test", status: "failed" }],
@@ -45,10 +100,10 @@ describe("getAttentionLevel", () => {
         },
       });
       const session = makeSession({ status: "ci_failed", activity: "idle", pr });
-      expect(getAttentionLevel(session)).toBe("urgent");
+      expect(getAttentionLevel(session)).toBe("review");
     });
 
-    it("returns urgent when changes are requested", () => {
+    it("returns review when changes are requested", () => {
       const pr = makePR({
         ciStatus: "passing",
         reviewDecision: "changes_requested",
@@ -61,10 +116,10 @@ describe("getAttentionLevel", () => {
         },
       });
       const session = makeSession({ status: "changes_requested", activity: "idle", pr });
-      expect(getAttentionLevel(session)).toBe("urgent");
+      expect(getAttentionLevel(session)).toBe("review");
     });
 
-    it("returns urgent when there are merge conflicts", () => {
+    it("returns review when there are merge conflicts", () => {
       const pr = makePR({
         ciStatus: "passing",
         reviewDecision: "approved",
@@ -77,47 +132,14 @@ describe("getAttentionLevel", () => {
         },
       });
       const session = makeSession({ status: "pr_open", activity: "idle", pr });
-      expect(getAttentionLevel(session)).toBe("urgent");
-    });
-
-    it("urgent takes priority over PR state", () => {
-      // Even with a mergeable PR, if activity is blocked it's urgent
-      const pr = makePR({
-        mergeability: {
-          mergeable: true,
-          ciPassing: true,
-          approved: true,
-          noConflicts: true,
-          blockers: [],
-        },
-      });
-      const session = makeSession({ activity: "blocked", pr });
-      expect(getAttentionLevel(session)).toBe("urgent");
+      expect(getAttentionLevel(session)).toBe("review");
     });
   });
 
-  // ── ACTION (orange zone) ───────────────────────────────────────────
+  // ── PENDING (yellow zone — waiting on external) ────────────────────
 
-  describe("action zone", () => {
-    it("returns action when PR is mergeable", () => {
-      const pr = makePR({
-        mergeability: {
-          mergeable: true,
-          ciPassing: true,
-          approved: true,
-          noConflicts: true,
-          blockers: [],
-        },
-      });
-      const session = makeSession({ status: "mergeable", activity: "idle", pr });
-      expect(getAttentionLevel(session)).toBe("action");
-    });
-  });
-
-  // ── WARNING (yellow zone) ──────────────────────────────────────────
-
-  describe("warning zone", () => {
-    it("returns warning when review is pending", () => {
+  describe("pending zone", () => {
+    it("returns pending when review is pending", () => {
       const pr = makePR({
         reviewDecision: "pending",
         mergeability: {
@@ -129,10 +151,10 @@ describe("getAttentionLevel", () => {
         },
       });
       const session = makeSession({ status: "review_pending", activity: "idle", pr });
-      expect(getAttentionLevel(session)).toBe("warning");
+      expect(getAttentionLevel(session)).toBe("pending");
     });
 
-    it("returns warning when review decision is none", () => {
+    it("returns pending when review decision is none", () => {
       const pr = makePR({
         reviewDecision: "none",
         mergeability: {
@@ -144,10 +166,10 @@ describe("getAttentionLevel", () => {
         },
       });
       const session = makeSession({ status: "pr_open", activity: "idle", pr });
-      expect(getAttentionLevel(session)).toBe("warning");
+      expect(getAttentionLevel(session)).toBe("pending");
     });
 
-    it("returns warning when there are unresolved threads", () => {
+    it("returns pending when there are unresolved threads", () => {
       const pr = makePR({
         reviewDecision: "approved",
         unresolvedThreads: 2,
@@ -164,29 +186,29 @@ describe("getAttentionLevel", () => {
         },
       });
       const session = makeSession({ status: "pr_open", activity: "idle", pr });
-      expect(getAttentionLevel(session)).toBe("warning");
+      expect(getAttentionLevel(session)).toBe("pending");
     });
   });
 
-  // ── OK (green zone) ────────────────────────────────────────────────
+  // ── WORKING (blue zone — agents doing their thing) ─────────────────
 
-  describe("ok zone", () => {
-    it("returns ok when actively working with no PR", () => {
+  describe("working zone", () => {
+    it("returns working when actively working with no PR", () => {
       const session = makeSession({ status: "working", activity: "active", pr: null });
-      expect(getAttentionLevel(session)).toBe("ok");
+      expect(getAttentionLevel(session)).toBe("working");
     });
 
-    it("returns ok when spawning", () => {
+    it("returns working when spawning", () => {
       const session = makeSession({ status: "spawning", activity: "active", pr: null });
-      expect(getAttentionLevel(session)).toBe("ok");
+      expect(getAttentionLevel(session)).toBe("working");
     });
 
-    it("returns ok for idle session with no PR", () => {
+    it("returns working for idle session with no PR", () => {
       const session = makeSession({ status: "working", activity: "idle", pr: null });
-      expect(getAttentionLevel(session)).toBe("ok");
+      expect(getAttentionLevel(session)).toBe("working");
     });
 
-    it("returns ok for draft PR with reviewDecision none", () => {
+    it("returns working for draft PR with reviewDecision none", () => {
       const pr = makePR({
         isDraft: true,
         reviewDecision: "none",
@@ -199,11 +221,11 @@ describe("getAttentionLevel", () => {
         },
       });
       const session = makeSession({ status: "working", activity: "active", pr });
-      expect(getAttentionLevel(session)).toBe("ok");
+      expect(getAttentionLevel(session)).toBe("working");
     });
   });
 
-  // ── DONE (grey zone) ───────────────────────────────────────────────
+  // ── DONE (grey zone — archived) ────────────────────────────────────
 
   describe("done zone", () => {
     it("returns done when PR is merged", () => {
@@ -227,11 +249,6 @@ describe("getAttentionLevel", () => {
     it("returns done when session is killed", () => {
       const session = makeSession({ status: "killed", activity: "exited", pr: null });
       expect(getAttentionLevel(session)).toBe("done");
-    });
-
-    it("returns urgent when agent has exited unexpectedly (non-terminal status)", () => {
-      const session = makeSession({ status: "working", activity: "exited", pr: null });
-      expect(getAttentionLevel(session)).toBe("urgent");
     });
 
     it("returns done when agent has exited with cleanup status", () => {

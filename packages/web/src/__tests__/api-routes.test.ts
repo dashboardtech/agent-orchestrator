@@ -6,11 +6,15 @@ import { GET as sessionsGET } from "@/app/api/sessions/route";
 import { POST as spawnPOST } from "@/app/api/spawn/route";
 import { POST as sendPOST } from "@/app/api/sessions/[id]/send/route";
 import { POST as killPOST } from "@/app/api/sessions/[id]/kill/route";
+import { POST as restorePOST } from "@/app/api/sessions/[id]/restore/route";
 import { POST as mergePOST } from "@/app/api/prs/[id]/merge/route";
 import { GET as eventsGET } from "@/app/api/events/route";
 
 function makeRequest(url: string, init?: RequestInit): NextRequest {
-  return new NextRequest(new URL(url, "http://localhost:3000"), init as ConstructorParameters<typeof NextRequest>[1]);
+  return new NextRequest(
+    new URL(url, "http://localhost:3000"),
+    init as ConstructorParameters<typeof NextRequest>[1],
+  );
 }
 
 describe("API Routes", () => {
@@ -179,6 +183,33 @@ describe("API Routes", () => {
       const req = makeRequest("/api/sessions/nonexistent/kill", { method: "POST" });
       const res = await killPOST(req, { params: Promise.resolve({ id: "nonexistent" }) });
       expect(res.status).toBe(404);
+    });
+  });
+
+  // ── POST /api/sessions/:id/restore ─────────────────────────────────
+
+  describe("POST /api/sessions/:id/restore", () => {
+    it("restores a killed session", async () => {
+      const req = makeRequest("/api/sessions/frontend-1/restore", { method: "POST" });
+      const res = await restorePOST(req, { params: Promise.resolve({ id: "frontend-1" }) });
+      expect(res.status).toBe(200);
+      const data = await res.json();
+      expect(data.ok).toBe(true);
+      expect(data.sessionId).toBe("frontend-1");
+    });
+
+    it("returns 404 for unknown session", async () => {
+      const req = makeRequest("/api/sessions/nonexistent/restore", { method: "POST" });
+      const res = await restorePOST(req, { params: Promise.resolve({ id: "nonexistent" }) });
+      expect(res.status).toBe(404);
+    });
+
+    it("returns 409 for active session", async () => {
+      const req = makeRequest("/api/sessions/backend-9/restore", { method: "POST" });
+      const res = await restorePOST(req, { params: Promise.resolve({ id: "backend-9" }) });
+      expect(res.status).toBe(409);
+      const data = await res.json();
+      expect(data.error).toMatch(/not in a terminal state/);
     });
   });
 

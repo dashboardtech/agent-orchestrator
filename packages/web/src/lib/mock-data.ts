@@ -402,6 +402,49 @@ export const mockSessions: DashboardSession[] = [
     metadata: {},
   },
 
+  // OK: actively working — has merge conflict on PR
+  {
+    id: "backend-11",
+    projectId: "my-app",
+    status: "working",
+    activity: "active",
+    branch: "feat/INT-1335-email-templates",
+    issueId: "INT-1335",
+    summary: "Implementing email template engine with MJML",
+    createdAt: ago(100),
+    lastActivityAt: ago(1),
+    pr: {
+      number: 442,
+      url: "https://github.com/acme/my-app/pull/442",
+      title: "feat: email template engine with MJML support",
+      owner: "acme",
+      repo: "my-app",
+      branch: "feat/INT-1335-email-templates",
+      baseBranch: "main",
+      isDraft: false,
+      state: "open",
+      additions: 489,
+      deletions: 32,
+      ciStatus: "passing",
+      ciChecks: [
+        { name: "build", status: "passed", url: "https://github.com/acme/my-app/actions/runs/20" },
+        { name: "test", status: "passed", url: "https://github.com/acme/my-app/actions/runs/21" },
+        { name: "lint", status: "passed", url: "https://github.com/acme/my-app/actions/runs/22" },
+      ],
+      reviewDecision: "pending",
+      mergeability: {
+        mergeable: false,
+        ciPassing: true,
+        approved: false,
+        noConflicts: false,
+        blockers: ["Merge conflict", "Needs review"],
+      },
+      unresolvedThreads: 0,
+      unresolvedComments: [],
+    },
+    metadata: {},
+  },
+
   // OK: spawning
   {
     id: "backend-10",

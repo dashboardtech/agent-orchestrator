@@ -168,10 +168,10 @@ describe("SessionCard", () => {
     expect(screen.getByText("feat/cool-thing")).toBeInTheDocument();
   });
 
-  it("renders details link", () => {
+  it("renders terminal link", () => {
     const session = makeSession({ id: "backend-5" });
     render(<SessionCard session={session} />);
-    const link = screen.getByText("details");
+    const link = screen.getByText("terminal");
     expect(link).toHaveAttribute("href", "/sessions/backend-5");
   });
 
@@ -375,28 +375,28 @@ describe("SessionCard", () => {
 describe("AttentionZone", () => {
   it("renders zone label and session count", () => {
     const sessions = [makeSession({ id: "s1" }), makeSession({ id: "s2" })];
-    render(<AttentionZone level="urgent" sessions={sessions} />);
-    expect(screen.getByText("URGENT")).toBeInTheDocument();
+    render(<AttentionZone level="respond" sessions={sessions} />);
+    expect(screen.getByText("RESPOND")).toBeInTheDocument();
     expect(screen.getByText("2")).toBeInTheDocument();
-    expect(screen.getByText("Sessions needing human input")).toBeInTheDocument();
+    expect(screen.getByText("Agents waiting for your input")).toBeInTheDocument();
   });
 
   it("renders nothing when sessions array is empty", () => {
-    const { container } = render(<AttentionZone level="urgent" sessions={[]} />);
+    const { container } = render(<AttentionZone level="respond" sessions={[]} />);
     expect(container.firstElementChild).toBeNull();
   });
 
   it("shows session cards when not collapsed", () => {
     const sessions = [makeSession({ id: "s1" })];
-    render(<AttentionZone level="urgent" sessions={sessions} />);
-    // urgent is defaultCollapsed: false, so cards should be visible
+    render(<AttentionZone level="respond" sessions={sessions} />);
+    // respond is defaultCollapsed: false, so cards should be visible
     expect(screen.getByText("s1")).toBeInTheDocument();
   });
 
-  it("ok zone is collapsed by default", () => {
+  it("working zone is collapsed by default", () => {
     const sessions = [makeSession({ id: "s1" })];
-    render(<AttentionZone level="ok" sessions={sessions} />);
-    // ok is defaultCollapsed: true, so session id should not be visible
+    render(<AttentionZone level="working" sessions={sessions} />);
+    // working is defaultCollapsed: true, so session id should not be visible
     expect(screen.queryByText("s1")).not.toBeInTheDocument();
     expect(screen.getByText("WORKING")).toBeInTheDocument();
   });
@@ -405,12 +405,12 @@ describe("AttentionZone", () => {
     const sessions = [makeSession({ id: "s1" })];
     render(<AttentionZone level="done" sessions={sessions} />);
     expect(screen.queryByText("s1")).not.toBeInTheDocument();
-    expect(screen.getByText("COMPLETED")).toBeInTheDocument();
+    expect(screen.getByText("DONE")).toBeInTheDocument();
   });
 
   it("toggles collapsed state on click", () => {
     const sessions = [makeSession({ id: "s1" })];
-    render(<AttentionZone level="ok" sessions={sessions} />);
+    render(<AttentionZone level="working" sessions={sessions} />);
     expect(screen.queryByText("s1")).not.toBeInTheDocument();
 
     // Click the zone header to expand
@@ -425,7 +425,7 @@ describe("AttentionZone", () => {
   it("passes callbacks to SessionCards", () => {
     const onKill = vi.fn();
     const sessions = [makeSession({ id: "s1", activity: "exited" })];
-    render(<AttentionZone level="urgent" sessions={sessions} onKill={onKill} />);
+    render(<AttentionZone level="respond" sessions={sessions} onKill={onKill} />);
     fireEvent.click(screen.getByText("kill session"));
     expect(onKill).toHaveBeenCalledWith("s1");
   });

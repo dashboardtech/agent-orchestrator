@@ -19,10 +19,11 @@ interface DashboardProps {
 export function Dashboard({ sessions, stats }: DashboardProps) {
   const grouped = useMemo(() => {
     const zones: Record<AttentionLevel, DashboardSession[]> = {
-      urgent: [],
-      action: [],
-      warning: [],
-      ok: [],
+      merge: [],
+      respond: [],
+      review: [],
+      pending: [],
+      working: [],
       done: [],
     };
     for (const session of sessions) {
@@ -67,6 +68,16 @@ export function Dashboard({ sessions, stats }: DashboardProps) {
     }
   };
 
+  const handleRestore = async (sessionId: string) => {
+    if (!confirm(`Restore session ${sessionId}?`)) return;
+    const res = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}/restore`, {
+      method: "POST",
+    });
+    if (!res.ok) {
+      console.error(`Failed to restore ${sessionId}:`, await res.text());
+    }
+  };
+
   return (
     <div className="mx-auto max-w-[1100px] px-8 py-8">
       {/* Header */}
@@ -90,7 +101,7 @@ export function Dashboard({ sessions, stats }: DashboardProps) {
         <h2 className="mb-3 px-1 text-[13px] font-semibold uppercase tracking-widest text-[var(--color-text-muted)]">
           Sessions
         </h2>
-        {(["urgent", "action", "warning", "ok", "done"] as AttentionLevel[]).map((level) => (
+        {(["merge", "respond", "review", "pending", "working", "done"] as AttentionLevel[]).map((level) => (
           <AttentionZone
             key={level}
             level={level}
@@ -98,6 +109,7 @@ export function Dashboard({ sessions, stats }: DashboardProps) {
             onSend={handleSend}
             onKill={handleKill}
             onMerge={handleMerge}
+            onRestore={handleRestore}
           />
         ))}
       </div>

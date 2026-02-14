@@ -10,6 +10,7 @@ interface AttentionZoneProps {
   onSend?: (sessionId: string, message: string) => void;
   onKill?: (sessionId: string) => void;
   onMerge?: (prNumber: number) => void;
+  onRestore?: (sessionId: string) => void;
 }
 
 const zoneConfig: Record<
@@ -21,39 +22,52 @@ const zoneConfig: Record<
     defaultCollapsed: boolean;
   }
 > = {
-  urgent: {
-    label: "URGENT",
-    description: "Sessions needing human input",
+  merge: {
+    label: "MERGE",
+    description: "PRs ready to merge",
+    color: "var(--color-accent-green)",
+    defaultCollapsed: false,
+  },
+  respond: {
+    label: "RESPOND",
+    description: "Agents waiting for your input",
     color: "var(--color-accent-red)",
     defaultCollapsed: false,
   },
-  action: {
-    label: "ACTION",
-    description: "PRs ready to merge",
+  review: {
+    label: "REVIEW",
+    description: "CI failures, changes requested, conflicts",
     color: "var(--color-accent-orange)",
     defaultCollapsed: false,
   },
-  warning: {
-    label: "WARNING",
-    description: "Needs review or pending checks",
+  pending: {
+    label: "PENDING",
+    description: "Waiting on reviewer or CI",
     color: "var(--color-accent-yellow)",
     defaultCollapsed: false,
   },
-  ok: {
+  working: {
     label: "WORKING",
-    description: "Sessions working normally",
-    color: "var(--color-accent-green)",
+    description: "Agents working normally",
+    color: "var(--color-accent-blue)",
     defaultCollapsed: true,
   },
   done: {
-    label: "COMPLETED",
-    description: "Merged or terminated sessions",
+    label: "DONE",
+    description: "Merged or terminated",
     color: "var(--color-text-muted)",
     defaultCollapsed: true,
   },
 };
 
-export function AttentionZone({ level, sessions, onSend, onKill, onMerge }: AttentionZoneProps) {
+export function AttentionZone({
+  level,
+  sessions,
+  onSend,
+  onKill,
+  onMerge,
+  onRestore,
+}: AttentionZoneProps) {
   const config = zoneConfig[level];
   const [collapsed, setCollapsed] = useState(config.defaultCollapsed);
 
@@ -95,6 +109,7 @@ export function AttentionZone({ level, sessions, onSend, onKill, onMerge }: Atte
               onSend={onSend}
               onKill={onKill}
               onMerge={onMerge}
+              onRestore={onRestore}
             />
           ))}
         </div>
