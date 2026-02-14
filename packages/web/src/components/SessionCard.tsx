@@ -103,7 +103,8 @@ export function SessionCard({ session, onSend, onKill, onMerge, onRestore }: Ses
         )}
         {session.activity === "exited" &&
           session.status !== "killed" &&
-          session.status !== "cleanup" && (
+          session.status !== "cleanup" &&
+          session.status !== "merged" && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -255,7 +256,7 @@ export function SessionCard({ session, onSend, onKill, onMerge, onRestore }: Ses
           )}
 
           <div className="mt-3 flex gap-2 border-t border-[var(--color-border-muted)] pt-3">
-            {isRestorable ? (
+            {isRestorable && (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -265,7 +266,8 @@ export function SessionCard({ session, onSend, onKill, onMerge, onRestore }: Ses
               >
                 restore session
               </button>
-            ) : (
+            )}
+            {!isRestorable && session.status !== "merged" && (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
