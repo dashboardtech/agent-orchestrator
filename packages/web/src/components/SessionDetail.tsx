@@ -62,6 +62,19 @@ function relativeTime(iso: string): string {
   return `${days}d ago`;
 }
 
+/** Clean up Bugbot comment body - extract title and description, remove HTML junk */
+function cleanBugbotComment(body: string): { title: string; description: string } {
+  // Extract title (first ### heading)
+  const titleMatch = body.match(/###\s+(.+?)(?:\n|$)/);
+  const title = titleMatch ? titleMatch[1].replace(/\*\*/g, "").trim() : "Comment";
+
+  // Extract description between DESCRIPTION START/END comments
+  const descMatch = body.match(/<!-- DESCRIPTION START -->\s*([\s\S]*?)\s*<!-- DESCRIPTION END -->/);
+  const description = descMatch ? descMatch[1].trim() : body.split("\n")[0] || "No description";
+
+  return { title, description };
+}
+
 /** Builds a GitHub branch URL from PR owner/repo/branch. */
 function buildGitHubBranchUrl(pr: DashboardPR): string {
   return `https://github.com/${pr.owner}/${pr.repo}/tree/${pr.branch}`;
@@ -323,38 +336,41 @@ function PRCard({ pr }: { pr: DashboardPR }) {
               Unresolved Comments ({pr.unresolvedThreads})
             </h4>
             <div className="space-y-2">
-              {pr.unresolvedComments.map((c) => (
-                <div
-                  key={c.url}
-                  className="rounded-md border border-[var(--color-border-muted)] bg-[var(--color-bg-primary)] p-3"
-                >
-                  <div className="flex items-center gap-2 text-xs">
-                    <span className="font-semibold text-[var(--color-text-secondary)]">
-                      {c.author}
-                    </span>
-                    <span className="text-[var(--color-text-muted)]">on</span>
-                    <a
-                      href={c.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-[var(--font-mono)] text-[11px] text-[var(--color-accent-blue)] hover:underline"
-                    >
-                      {c.path}
-                    </a>
-                    <a
-                      href={c.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="ml-auto shrink-0 text-[11px] text-[var(--color-text-muted)] hover:text-[var(--color-accent-blue)]"
-                    >
-                      view &rarr;
-                    </a>
-                  </div>
-                  <p className="mt-1.5 border-l-2 border-[var(--color-border-default)] pl-2.5 text-xs leading-relaxed text-[var(--color-text-secondary)] italic">
-                    {c.body}
-                  </p>
-                </div>
-              ))}
+              {pr.unresolvedComments.map((c) => {
+                const { title, description } = cleanBugbotComment(c.body);
+                return (
+                  <details
+                    key={c.url}
+                    className="group rounded-md border border-[var(--color-border-muted)] bg-[var(--color-bg-primary)]"
+                  >
+                    <summary className="cursor-pointer p-3 hover:bg-[var(--color-bg-tertiary)]">
+                      <div className="inline-flex items-center gap-2 text-xs">
+                        <span className="font-semibold text-[var(--color-text-secondary)]">
+                          {title}
+                        </span>
+                        <span className="text-[var(--color-text-muted)]">by {c.author}</span>
+                        <a
+                          href={c.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="ml-auto text-[11px] text-[var(--color-accent-blue)] hover:underline"
+                        >
+                          view on GitHub &rarr;
+                        </a>
+                      </div>
+                    </summary>
+                    <div className="border-t border-[var(--color-border-muted)] p-3">
+                      <div className="mb-2 text-[10px] font-medium text-[var(--color-text-muted)]">
+                        {c.path}
+                      </div>
+                      <p className="border-l-2 border-[var(--color-border-default)] pl-2.5 text-xs leading-relaxed text-[var(--color-text-secondary)]">
+                        {description}
+                      </p>
+                    </div>
+                  </details>
+                );
+              })}
             </div>
           </div>
         )}
