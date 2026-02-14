@@ -587,7 +587,7 @@ function createLinearTracker(query: GraphQLTransport): Tracker {
 
       const variables: Record<string, unknown> = {
         title: input.title,
-        description: input.description,
+        description: input.description ?? "",
         teamId,
       };
 
