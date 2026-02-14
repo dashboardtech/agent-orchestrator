@@ -183,9 +183,16 @@ export function SessionCard({ session, onSend, onKill, onMerge, onRestore }: Ses
             </DetailSection>
           )}
 
-          {session.issueId && (
+          {session.issueUrl && (
             <DetailSection label="Issue">
-              <span className="text-xs text-[var(--color-accent-blue)]">{session.issueId}</span>
+              <a
+                href={session.issueUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-[var(--color-accent-blue)] hover:underline"
+              >
+                {session.issueLabel || session.issueUrl}
+              </a>
             </DetailSection>
           )}
 

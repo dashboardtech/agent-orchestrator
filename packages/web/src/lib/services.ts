@@ -18,6 +18,7 @@ import {
   type PluginRegistry,
   type SessionManager,
   type SCM,
+  type Tracker,
   type ProjectConfig,
 } from "@agent-orchestrator/core";
 
@@ -81,4 +82,13 @@ export function getSCM(
 ): SCM | null {
   if (!project?.scm) return null;
   return registry.get<SCM>("scm", project.scm.plugin);
+}
+
+/** Resolve the Tracker plugin for a project. Returns null if not configured. */
+export function getTracker(
+  registry: PluginRegistry,
+  project: ProjectConfig | undefined,
+): Tracker | null {
+  if (!project?.tracker) return null;
+  return registry.get<Tracker>("tracker", project.tracker.plugin);
 }
