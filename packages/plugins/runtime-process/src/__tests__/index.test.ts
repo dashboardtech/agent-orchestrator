@@ -471,6 +471,23 @@ describe("getOutput()", () => {
     const output = await runtime.getOutput(makeHandle(), 50);
     expect(output).toBe("out1\nerr1\nout2");
   });
+
+  it("does not mix partial lines across stdout and stderr", async () => {
+    const child = createMockChild();
+    mockSpawn.mockReturnValue(child);
+
+    const runtime = create();
+    await runtime.create(defaultConfig());
+
+    // stdout emits a partial line, then stderr emits a full line,
+    // then stdout completes its line — they should NOT be concatenated
+    child.stdout.emit("data", Buffer.from("hel"));
+    child.stderr.emit("data", Buffer.from("error\n"));
+    child.stdout.emit("data", Buffer.from("lo\n"));
+
+    const output = await runtime.getOutput(makeHandle(), 50);
+    expect(output).toBe("error\nhello");
+  });
 });
 
 // =========================================================================

@@ -104,32 +104,35 @@ export function create(): Runtime {
       });
 
       // Capture stdout and stderr into rolling buffer.
-      // Stream chunks are arbitrary so we buffer the trailing partial line
-      // and only push complete (newline-terminated) lines.
-      let partial = "";
-      const appendOutput = (data: Buffer) => {
-        const text = partial + data.toString("utf-8");
-        const lines = text.split("\n");
-        // Last element is either "" (if text ended with \n) or a partial line
-        partial = lines.pop()!;
-        for (const line of lines) {
-          entry.outputBuffer.push(line);
-        }
-        // Trim buffer to max size
-        if (entry.outputBuffer.length > MAX_OUTPUT_LINES) {
-          entry.outputBuffer.splice(0, entry.outputBuffer.length - MAX_OUTPUT_LINES);
-        }
-      };
+      // Each stream gets its own partial-line buffer so interleaved chunks
+      // from different streams don't corrupt each other.
+      function makeAppendOutput(): (data: Buffer) => void {
+        let partial = "";
+        return (data: Buffer) => {
+          const text = partial + data.toString("utf-8");
+          const lines = text.split("\n");
+          // Last element is either "" (if text ended with \n) or a partial line
+          partial = lines.pop()!;
+          for (const line of lines) {
+            entry.outputBuffer.push(line);
+          }
+          // Trim buffer to max size
+          if (entry.outputBuffer.length > MAX_OUTPUT_LINES) {
+            entry.outputBuffer.splice(0, entry.outputBuffer.length - MAX_OUTPUT_LINES);
+          }
+        };
+      }
 
-      child.stdout?.on("data", appendOutput);
-      child.stderr?.on("data", appendOutput);
+      const appendStdout = makeAppendOutput();
+      const appendStderr = makeAppendOutput();
+      child.stdout?.on("data", appendStdout);
+      child.stderr?.on("data", appendStderr);
 
-      // Flush any trailing partial line when the process exits
+      // Flush any trailing partial lines when the process exits
       child.once("exit", () => {
-        if (partial) {
-          entry.outputBuffer.push(partial);
-          partial = "";
-        }
+        // Trigger flush by sending a final newline through each handler
+        appendStdout(Buffer.from("\n"));
+        appendStderr(Buffer.from("\n"));
       });
 
       return {
