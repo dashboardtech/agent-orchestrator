@@ -1,4 +1,4 @@
-import type { Session, ProjectConfig } from "@agent-orchestrator/core";
+import type { Session, ProjectConfig } from "@composio/ao-core";
 import { NextResponse } from "next/server";
 import { getServices, getSCM, getTracker } from "@/lib/services";
 import { sessionToDashboard, enrichSessionPR, enrichSessionIssue, computeStats } from "@/lib/serialize";
