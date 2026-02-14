@@ -660,7 +660,7 @@ function createClaudeCodeAgent(): Agent {
             {
               type: "command",
               command: hookScriptPath,
-              timeout: 5,
+              timeout: 5000,
             },
           ],
         });
