@@ -8,11 +8,14 @@ export const dynamic = "force-dynamic";
 
 export default async function Home() {
   let sessions: DashboardSession[] = [];
+  let orchestratorId: string | null = null;
   try {
     const { config, registry, sessionManager } = await getServices();
     const allSessions = await sessionManager.list();
-    // Filter out orchestrator session — it gets its own button, not a card
-    const coreSessions = allSessions.filter((s) => s.id !== "orchestrator");
+    // Find and filter out orchestrator sessions — they get their own button, not a card
+    const orchSession = allSessions.find((s) => s.id.endsWith("-orchestrator"));
+    if (orchSession) orchestratorId = orchSession.id;
+    const coreSessions = allSessions.filter((s) => !s.id.endsWith("-orchestrator"));
     sessions = coreSessions.map(sessionToDashboard);
 
     // Enrich issue labels using tracker plugin (synchronous)
@@ -99,5 +102,5 @@ export default async function Home() {
     // Config not found or services unavailable — show empty dashboard
   }
 
-  return <Dashboard sessions={sessions} stats={computeStats(sessions)} />;
+  return <Dashboard sessions={sessions} stats={computeStats(sessions)} orchestratorId={orchestratorId} />;
 }

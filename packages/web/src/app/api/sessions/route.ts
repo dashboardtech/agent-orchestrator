@@ -29,8 +29,8 @@ export async function GET() {
     const { config, registry, sessionManager } = await getServices();
     const coreSessions = await sessionManager.list();
 
-    // Filter out special orchestrator session - it's not a worker session
-    const workerSessions = coreSessions.filter((s) => s.id !== "orchestrator");
+    // Filter out orchestrator sessions — they get their own button, not a card
+    const workerSessions = coreSessions.filter((s) => !s.id.endsWith("-orchestrator"));
     const dashboardSessions = workerSessions.map(sessionToDashboard);
 
     // Enrich issue labels using tracker plugin (synchronous)
