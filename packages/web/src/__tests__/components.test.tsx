@@ -175,24 +175,24 @@ describe("SessionCard", () => {
     expect(link).toHaveAttribute("href", "/sessions/backend-5");
   });
 
-  it("shows kill button when agent has exited", () => {
+  it("shows restore button when agent has exited", () => {
     const session = makeSession({ activity: "exited" });
     render(<SessionCard session={session} />);
-    expect(screen.getByText("kill session")).toBeInTheDocument();
+    expect(screen.getByText("restore session")).toBeInTheDocument();
   });
 
-  it("does not show kill button when agent is active", () => {
+  it("does not show restore button when agent is active", () => {
     const session = makeSession({ activity: "active" });
     render(<SessionCard session={session} />);
-    expect(screen.queryByText("kill session")).not.toBeInTheDocument();
+    expect(screen.queryByText("restore session")).not.toBeInTheDocument();
   });
 
-  it("calls onKill when kill button is clicked", () => {
-    const onKill = vi.fn();
+  it("calls onRestore when restore button is clicked", () => {
+    const onRestore = vi.fn();
     const session = makeSession({ id: "backend-1", activity: "exited" });
-    render(<SessionCard session={session} onKill={onKill} />);
-    fireEvent.click(screen.getByText("kill session"));
-    expect(onKill).toHaveBeenCalledWith("backend-1");
+    render(<SessionCard session={session} onRestore={onRestore} />);
+    fireEvent.click(screen.getByText("restore session"));
+    expect(onRestore).toHaveBeenCalledWith("backend-1");
   });
 
   it("shows merge button when PR is mergeable", () => {
@@ -423,10 +423,10 @@ describe("AttentionZone", () => {
   });
 
   it("passes callbacks to SessionCards", () => {
-    const onKill = vi.fn();
+    const onRestore = vi.fn();
     const sessions = [makeSession({ id: "s1", activity: "exited" })];
-    render(<AttentionZone level="respond" sessions={sessions} onKill={onKill} />);
-    fireEvent.click(screen.getByText("kill session"));
-    expect(onKill).toHaveBeenCalledWith("s1");
+    render(<AttentionZone level="respond" sessions={sessions} onRestore={onRestore} />);
+    fireEvent.click(screen.getByText("restore session"));
+    expect(onRestore).toHaveBeenCalledWith("s1");
   });
 });
