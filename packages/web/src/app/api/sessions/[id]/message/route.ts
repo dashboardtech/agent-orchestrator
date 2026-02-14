@@ -22,19 +22,29 @@ export async function POST(
 
     // Send message to the session via tmux
     // TODO: This should use the Runtime plugin's sendInput method
-    const { spawn } = await import("node:child_process");
+    const { execFile } = await import("node:child_process");
+    const { promisify } = await import("node:util");
+    const execFileAsync = promisify(execFile);
 
-    // Escape the message and send it to the tmux session
-    // First press Escape to ensure we're not in any special mode
-    spawn("tmux", ["send-keys", "-t", id, "Escape"]);
+    try {
+      // First press Escape to ensure we're not in any special mode
+      await execFileAsync("tmux", ["send-keys", "-t", id, "Escape"], { timeout: 5000 });
 
-    // Wait a bit for the escape to process
-    await new Promise(resolve => setTimeout(resolve, 100));
+      // Wait a bit for the escape to process
+      await new Promise(resolve => setTimeout(resolve, 100));
 
-    // Send the message
-    spawn("tmux", ["send-keys", "-t", id, message, "Enter"]);
+      // Send the message
+      await execFileAsync("tmux", ["send-keys", "-t", id, message, "Enter"], { timeout: 5000 });
 
-    return NextResponse.json({ success: true });
+      return NextResponse.json({ success: true });
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      console.error("Failed to send keys to tmux:", errorMsg);
+      return NextResponse.json(
+        { error: `Failed to send message: ${errorMsg}` },
+        { status: 500 },
+      );
+    }
   } catch (error) {
     console.error("Failed to send message:", error);
     return NextResponse.json(
