@@ -319,10 +319,10 @@ describe("tracker-linear Composio transport", () => {
       // Now switch to fake timers
       vi.useFakeTimers();
 
-      // Suppress the transient unhandled rejection that occurs when
-      // vitest's fake timers fire the setTimeout callback synchronously
-      // during advanceTimersByTimeAsync, before Promise.race's microtask
-      // handler has processed the rejection.
+      // Vitest's fake timers fire the setTimeout callback synchronously
+      // during advanceTimersByTimeAsync, before the microtask queue can
+      // process the .catch() handler on timeoutPromise. Suppress the
+      // transient unhandled rejection that vitest detects in that window.
       const suppressed: unknown[] = [];
       const handler = (reason: unknown) => { suppressed.push(reason); };
       process.on("unhandledRejection", handler);

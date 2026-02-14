@@ -181,6 +181,13 @@ function createComposioTransport(
       }, 30_000);
     });
 
+    // Whichever promise loses the race is left without a handler.
+    // Attach no-op .catch() to both so the loser doesn't trigger an
+    // unhandled promise rejection. This does not affect Promise.race —
+    // it still propagates the winning rejection normally.
+    resultPromise.catch(() => {});
+    timeoutPromise.catch(() => {});
+
     try {
       const result = await Promise.race([resultPromise, timeoutPromise]);
 

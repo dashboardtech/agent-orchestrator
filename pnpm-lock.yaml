@@ -61,6 +61,12 @@ importers:
         specifier: ^3.24.0
         version: 3.25.76
     devDependencies:
+      '@agent-orchestrator/plugin-scm-github':
+        specifier: workspace:*
+        version: link:../plugins/scm-github
+      '@agent-orchestrator/plugin-tracker-github':
+        specifier: workspace:*
+        version: link:../plugins/tracker-github
       '@types/node':
         specifier: ^25.2.3
         version: 25.2.3
