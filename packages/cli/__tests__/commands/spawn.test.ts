@@ -236,7 +236,13 @@ describe("spawn command", () => {
       "send-keys",
       "-t",
       "app-1",
+      "-l",
       expect.stringContaining("INT-100"),
+    ]);
+    expect(mockExec).toHaveBeenCalledWith("tmux", [
+      "send-keys",
+      "-t",
+      "app-1",
       "Enter",
     ]);
   });

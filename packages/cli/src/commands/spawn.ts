@@ -173,7 +173,9 @@ async function spawnSession(
     if (issueId) {
       await new Promise((resolve) => setTimeout(resolve, 1000));
       const prompt = `Please start working on ${issueId}, fetch ticket info, create the appropriate branch so that github auto links to linear, and start working on the task`;
-      await exec("tmux", ["send-keys", "-t", sessionName, prompt, "Enter"]);
+      await exec("tmux", ["send-keys", "-t", sessionName, "-l", prompt]);
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      await exec("tmux", ["send-keys", "-t", sessionName, "Enter"]);
     }
 
     // Open terminal tab if requested
