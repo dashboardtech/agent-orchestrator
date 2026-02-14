@@ -6,10 +6,17 @@
  *
  * ttyd handles all the hard parts: xterm.js, WebSocket, ANSI rendering,
  * cursor positioning, resize, input — battle-tested and correct.
+ *
+ * TODO: Add authentication middleware to verify:
+ *   - User is authenticated
+ *   - User owns the requested session
+ *   - Rate limiting for terminal access
  */
 
 import { spawn, type ChildProcess } from "node:child_process";
 import { createServer, request } from "node:http";
+import { readFileSync, existsSync } from "node:fs";
+import { join } from "node:path";
 
 interface TtydInstance {
   sessionId: string;
@@ -158,8 +165,13 @@ function getOrSpawnTtyd(sessionId: string): TtydInstance {
 const server = createServer(async (req, res) => {
   const url = new URL(req.url ?? "/", "http://localhost");
 
-  // CORS for dashboard
-  res.setHeader("Access-Control-Allow-Origin", "*");
+  // CORS for dashboard - restrict to localhost and common dev hosts
+  // TODO: Replace with proper session-based authentication
+  const origin = req.headers.origin;
+  const allowedOrigins = ["http://localhost:3000", "http://localhost:9847", "http://127.0.0.1:3000", "http://127.0.0.1:9847"];
+  if (origin && allowedOrigins.includes(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+  }
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
@@ -175,6 +187,16 @@ const server = createServer(async (req, res) => {
     if (!sessionId) {
       res.writeHead(400, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ error: "Missing session parameter" }));
+      return;
+    }
+
+    // Validate session exists before spawning ttyd
+    // TODO: Load config properly instead of hardcoded path
+    const dataDir = process.env.DATA_DIR ?? join(process.env.HOME ?? "~", ".agent-orchestrator");
+    const sessionPath = join(dataDir, sessionId);
+    if (!existsSync(sessionPath)) {
+      res.writeHead(404, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Session not found" }));
       return;
     }
 
