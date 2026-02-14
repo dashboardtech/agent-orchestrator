@@ -101,9 +101,8 @@ export function SessionCard({ session, onSend, onKill, onMerge, onRestore }: Ses
             restore session
           </button>
         )}
-        {session.activity === "exited" &&
-          session.status !== "killed" &&
-          session.status !== "cleanup" &&
+        {!isRestorable &&
+          session.activity === "exited" &&
           session.status !== "merged" && (
             <button
               onClick={(e) => {
