@@ -105,6 +105,15 @@ function metadataToSession(
   createdAt?: Date,
   modifiedAt?: Date,
 ): Session {
+  // Runtime validation: project field is required
+  if (!meta["project"]) {
+    throw new Error(
+      `Session ${sessionId} metadata is missing required 'project' field. ` +
+      `This indicates corrupted metadata or a session created by legacy scripts. ` +
+      `Add 'project=<project-id>' to the metadata file.`,
+    );
+  }
+
   return {
     id: sessionId,
     projectId: meta["project"],
