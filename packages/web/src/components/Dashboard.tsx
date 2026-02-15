@@ -87,12 +87,14 @@ export function Dashboard({ sessions, stats, orchestratorId }: DashboardProps) {
           <span className="text-[#7c8aff]">Agent</span> Orchestrator
         </h1>
         <div className="flex items-baseline gap-4">
-          <a
-            href={`/sessions/${encodeURIComponent(orchestratorId ?? "ao-orchestrator")}`}
-            className="rounded-md border border-[var(--color-border-default)] px-3 py-1 text-[11px] text-[var(--color-text-secondary)] transition-colors hover:border-[var(--color-accent-blue)] hover:text-[var(--color-accent-blue)]"
-          >
-            orchestrator terminal
-          </a>
+          {orchestratorId && (
+            <a
+              href={`/sessions/${encodeURIComponent(orchestratorId)}`}
+              className="rounded-md border border-[var(--color-border-default)] px-3 py-1 text-[11px] text-[var(--color-text-secondary)] transition-colors hover:border-[var(--color-accent-blue)] hover:text-[var(--color-accent-blue)]"
+            >
+              orchestrator terminal
+            </a>
+          )}
           <ClientTimestamp />
         </div>
       </div>

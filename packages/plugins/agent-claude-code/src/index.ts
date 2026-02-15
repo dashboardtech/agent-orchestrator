@@ -707,7 +707,7 @@ function createClaudeCodeAgent(): Agent {
     async setupWorkspaceHooks(workspacePath: string, _config: WorkspaceHooksConfig): Promise<void> {
       // Use $CLAUDE_PROJECT_DIR variable for hook command
       // (works in both main checkout and worktrees when .claude is symlinked)
-      await setupHookInWorkspace(workspacePath, '"$CLAUDE_PROJECT_DIR"/.claude/metadata-updater.sh');
+      await setupHookInWorkspace(workspacePath, '$CLAUDE_PROJECT_DIR/.claude/metadata-updater.sh');
     },
 
     async postLaunchSetup(session: Session): Promise<void> {

@@ -135,13 +135,22 @@ function startDashboard(port: number, webDir: string): ChildProcess {
 
 /**
  * Stop dashboard server.
- * Uses pkill to find and kill the Next.js dev server.
+ * Uses lsof to find the process listening on the port, then kills it.
  * Best effort — if it fails, just warn the user.
  */
 async function stopDashboard(port: number): Promise<void> {
   try {
-    await exec("pkill", ["-f", `next dev -p ${port}`]);
-    console.log(chalk.green("Dashboard stopped"));
+    // Find PID listening on the port
+    const { stdout } = await exec("lsof", ["-ti", `:${port}`]);
+    const pid = stdout.trim();
+
+    if (pid) {
+      // Kill the specific process
+      await exec("kill", [pid]);
+      console.log(chalk.green("Dashboard stopped"));
+    } else {
+      console.log(chalk.yellow(`Dashboard not running on port ${port}`));
+    }
   } catch {
     console.log(chalk.yellow("Could not stop dashboard (may not be running)"));
   }

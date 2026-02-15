@@ -14,13 +14,10 @@ export default async function Home() {
     const allSessions = await sessionManager.list();
 
     // Find the orchestrator session (any session ending with -orchestrator)
+    // Only set orchestratorId if an actual session exists (no fallback)
     const orchSession = allSessions.find((s) => s.id.endsWith("-orchestrator"));
     if (orchSession) {
       orchestratorId = orchSession.id;
-    } else {
-      // Fallback: compute expected orchestrator ID from first project
-      const firstProject = Object.values(config.projects)[0];
-      orchestratorId = firstProject ? `${firstProject.sessionPrefix}-orchestrator` : null;
     }
 
     // Filter out orchestrator from worker sessions
