@@ -454,9 +454,6 @@ export function createSessionManager(deps: SessionManagerDeps): SessionManager {
       const raw = readMetadataRaw(config.dataDir, sid);
       if (!raw) continue;
 
-      // Filter by project if specified
-      if (projectId && raw["project"] !== projectId) continue;
-
       // Get file timestamps for createdAt/lastActivityAt
       let createdAt: Date | undefined;
       let modifiedAt: Date | undefined;
@@ -470,6 +467,9 @@ export function createSessionManager(deps: SessionManagerDeps): SessionManager {
       }
 
       const session = metadataToSession(sid, raw, config, createdAt, modifiedAt);
+
+      // Filter by project if specified (after inference runs)
+      if (projectId && session.projectId !== projectId) continue;
 
       // Enrich with live runtime state and activity detection
       if (session.runtimeHandle) {
