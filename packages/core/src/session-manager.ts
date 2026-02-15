@@ -11,7 +11,7 @@
  * Reference: scripts/claude-ao-session, scripts/send-to-session
  */
 
-import { statSync } from "node:fs";
+import { statSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import type {
   SessionManager,
@@ -360,11 +360,36 @@ export function createSessionManager(deps: SessionManagerDeps): SessionManager {
   }
 
   async function list(projectId?: string): Promise<Session[]> {
-    const sessionIds = listMetadata(config.dataDir);
+    // Scan both top-level dataDir and project-specific subdirs (e.g. ao-sessions/)
+    // The CLI creates project-specific subdirs: ${dataDir}/${projectId}-sessions/
+    let sessionIds = listMetadata(config.dataDir);
+    const projectSubdirs = new Map<string, string>(); // sessionId -> subdir path
+
+    try {
+      const entries = readdirSync(config.dataDir);
+      for (const entry of entries) {
+        if (!entry.endsWith("-sessions")) continue;
+        const subdirPath = join(config.dataDir, entry);
+        try {
+          if (!statSync(subdirPath).isDirectory()) continue;
+        } catch { continue; }
+        const subIds = listMetadata(subdirPath);
+        for (const sid of subIds) {
+          if (!sessionIds.includes(sid)) {
+            sessionIds.push(sid);
+            projectSubdirs.set(sid, subdirPath);
+          }
+        }
+      }
+    } catch {
+      // dataDir doesn't exist or can't be read — just use top-level
+    }
+
     const sessions: Session[] = [];
 
     for (const sid of sessionIds) {
-      const raw = readMetadataRaw(config.dataDir, sid);
+      const metaDir = projectSubdirs.get(sid) ?? config.dataDir;
+      const raw = readMetadataRaw(metaDir, sid);
       if (!raw) continue;
 
       // Filter by project if specified
@@ -374,7 +399,7 @@ export function createSessionManager(deps: SessionManagerDeps): SessionManager {
       let createdAt: Date | undefined;
       let modifiedAt: Date | undefined;
       try {
-        const metaPath = join(config.dataDir, sid);
+        const metaPath = join(metaDir, sid);
         const stats = statSync(metaPath);
         createdAt = stats.birthtime;
         modifiedAt = stats.mtime;
