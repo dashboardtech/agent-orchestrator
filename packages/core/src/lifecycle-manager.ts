@@ -11,6 +11,8 @@
  */
 
 import { randomUUID } from "node:crypto";
+import { join } from "node:path";
+import { existsSync } from "node:fs";
 import type {
   LifecycleManager,
   SessionManager,

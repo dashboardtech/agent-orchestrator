@@ -498,7 +498,8 @@ function classifyTerminalOutput(terminalOutput: string): ActivityState {
   // Check the last line FIRST — if the prompt is visible, the agent is idle
   // regardless of historical output (e.g. "Reading file..." from earlier).
   // The ❯ is Claude Code's prompt character.
-  if (/^[❯>$#]\s*$/.test(lastLine)) return "idle";
+  // Bare prompt is idle ONLY when not actively processing (no "esc to interrupt")
+  if (/^[❯>$#]\s*$/.test(lastLine) && !hasEscToInterrupt) return "idle";
 
   // Claude Code shows inline suggestions after the prompt when idle, e.g.
   // "❯ check CI status on the PR". Distinguish from active processing by
