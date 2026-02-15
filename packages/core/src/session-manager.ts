@@ -100,16 +100,21 @@ function validateStatus(raw: string | undefined): SessionStatus {
 
 /**
  * Infer projectId from session ID by matching against project sessionPrefix values.
+ * Uses strict pattern matching: sessionId must be exactly "prefix-DIGITS" (e.g., "ao-18").
  * Prefers the longest matching prefix to handle overlapping prefixes correctly.
  * Returns the matching project ID, or empty string if no match.
+ *
+ * Non-standard session names (e.g., "ao-orchestrator") should have the project field
+ * set explicitly in metadata rather than relying on inference.
  */
 function inferProjectId(sessionId: SessionId, config: OrchestratorConfig): string {
   let longestMatch: { projectId: string; prefixLength: number } | null = null;
 
   for (const [projectId, project] of Object.entries(config.projects)) {
     const prefix = project.sessionPrefix;
-    // Match exact prefix: "ao-1" matches prefix "ao", not "aoc" or "a"
-    if (sessionId === prefix || sessionId.startsWith(`${prefix}-`)) {
+    // Strict pattern: must be "prefix-DIGITS" (e.g., "ao-18", not "ao-abc" or "ao-1-extra")
+    const pattern = new RegExp(`^${escapeRegex(prefix)}-\\d+$`);
+    if (pattern.test(sessionId)) {
       if (!longestMatch || prefix.length > longestMatch.prefixLength) {
         longestMatch = { projectId, prefixLength: prefix.length };
       }
