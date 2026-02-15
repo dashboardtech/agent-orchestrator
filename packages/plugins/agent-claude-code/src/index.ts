@@ -1,7 +1,6 @@
 import {
   shellEscape,
   readLastJsonlEntry,
-  TAIL_READ_BYTES,
   type Agent,
   type AgentSessionInfo,
   type AgentLaunchConfig,
