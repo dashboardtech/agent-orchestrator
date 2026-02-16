@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   type DashboardSession,
   type DashboardPR,
 } from "@/lib/types";
 import { CI_STATUS } from "@composio/ao-core/types";
+import { cn } from "@/lib/cn";
 import { CICheckList } from "./CIBadge";
 import { DirectTerminal } from "./DirectTerminal";
 
@@ -83,12 +84,13 @@ function buildGitHubRepoUrl(pr: DashboardPR): string {
 async function askAgentToFix(
   sessionId: string,
   comment: { url: string; path: string; body: string },
+  onSuccess: () => void,
+  onError: () => void,
 ) {
   try {
     const { title, description } = cleanBugbotComment(comment.body);
     const message = `Please address this review comment:\n\nFile: ${comment.path}\nComment: ${title}\nDescription: ${description}\n\nComment URL: ${comment.url}\n\nAfter fixing, mark the comment as resolved at ${comment.url}`;
 
-    // TODO: Implement API endpoint to send message to agent session
     const res = await fetch(`/api/sessions/${sessionId}/message`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -99,10 +101,10 @@ async function askAgentToFix(
       throw new Error(`HTTP ${res.status}`);
     }
 
-    alert("Message sent to agent");
+    onSuccess();
   } catch (err) {
     console.error("Failed to send message to agent:", err);
-    alert("Failed to send message to agent");
+    onError();
   }
 }
 
@@ -288,6 +290,40 @@ function ClientTimestamps({
 // ── PR Card ──────────────────────────────────────────────────────────
 
 function PRCard({ pr, sessionId }: { pr: DashboardPR; sessionId: string }) {
+  const [sendingCommentUrl, setSendingCommentUrl] = useState<string | null>(null);
+  const [sentCommentUrl, setSentCommentUrl] = useState<string | null>(null);
+  const [errorCommentUrl, setErrorCommentUrl] = useState<string | null>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
+
+  const handleAskAgentToFix = async (comment: { url: string; path: string; body: string }) => {
+    setSendingCommentUrl(comment.url);
+    setErrorCommentUrl(null);
+    setSentCommentUrl(null);
+
+    await askAgentToFix(
+      sessionId,
+      comment,
+      () => {
+        setSendingCommentUrl(null);
+        setSentCommentUrl(comment.url);
+        if (timerRef.current) clearTimeout(timerRef.current);
+        timerRef.current = setTimeout(() => setSentCommentUrl(null), 3000);
+      },
+      () => {
+        setSendingCommentUrl(null);
+        setErrorCommentUrl(comment.url);
+        if (timerRef.current) clearTimeout(timerRef.current);
+        timerRef.current = setTimeout(() => setErrorCommentUrl(null), 3000);
+      },
+    );
+  };
+
   const allGreen =
     pr.mergeability.mergeable &&
     pr.mergeability.ciPassing &&
@@ -396,10 +432,24 @@ function PRCard({ pr, sessionId }: { pr: DashboardPR; sessionId: string }) {
                         {description}
                       </p>
                       <button
-                        onClick={() => askAgentToFix(sessionId, c)}
-                        className="mt-2 rounded-md bg-[var(--color-accent-blue)] px-3 py-1 text-[10px] font-medium text-white hover:opacity-90"
+                        onClick={() => handleAskAgentToFix(c)}
+                        disabled={sendingCommentUrl === c.url}
+                        className={cn(
+                          "mt-2 rounded-md px-3 py-1 text-[10px] font-medium transition-colors",
+                          sentCommentUrl === c.url
+                            ? "bg-[var(--color-accent-green)] text-white"
+                            : errorCommentUrl === c.url
+                              ? "bg-[var(--color-accent-red)] text-white"
+                              : "bg-[var(--color-accent-blue)] text-white hover:opacity-90 disabled:opacity-50",
+                        )}
                       >
-                        Ask Agent to Fix
+                        {sendingCommentUrl === c.url
+                          ? "Sending..."
+                          : sentCommentUrl === c.url
+                            ? "Sent!"
+                            : errorCommentUrl === c.url
+                              ? "Failed"
+                              : "Ask Agent to Fix"}
                       </button>
                     </div>
                   </details>
