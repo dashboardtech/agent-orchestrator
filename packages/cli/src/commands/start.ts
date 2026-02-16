@@ -13,6 +13,7 @@ import ora from "ora";
 import type { Command } from "commander";
 import {
   loadConfig,
+  findConfigFile,
   generateOrchestratorPrompt,
   hasTmuxSession,
   newTmuxSession,
@@ -120,11 +121,17 @@ function resolveProject(
  * Start dashboard server in the background.
  * Returns the child process handle for cleanup.
  */
-function startDashboard(port: number, webDir: string): ChildProcess {
+function startDashboard(port: number, webDir: string, configPath: string): ChildProcess {
+  const env = { ...process.env };
+
+  // Pass config path to dashboard so it uses the same config as ao start
+  env["AO_CONFIG_PATH"] = configPath;
+
   const child = spawn("npx", ["next", "dev", "-p", String(port)], {
     cwd: webDir,
     stdio: "inherit",
     detached: false,
+    env,
   });
 
   child.on("error", (err) => {
@@ -173,7 +180,13 @@ export function registerStart(program: Command): void {
         opts?: { dashboard?: boolean; orchestrator?: boolean; regenerate?: boolean },
       ) => {
         try {
-          const config = loadConfig();
+          // Find config path before loading (so we can pass it to dashboard)
+          const configPath = findConfigFile();
+          if (!configPath) {
+            throw new Error("No agent-orchestrator.yaml found. Run `ao init` to create one.");
+          }
+
+          const config = loadConfig(configPath);
           const { projectId, project } = resolveProject(config, projectArg);
           const sessionId = `${project.sessionPrefix}-orchestrator`;
           const port = config.port;
@@ -193,7 +206,8 @@ export function registerStart(program: Command): void {
               throw new Error("Could not find @composio/ao-web package. Run: pnpm install");
             }
 
-            dashboardProcess = startDashboard(port, webDir);
+            // Pass config path to dashboard so it uses the same config
+            dashboardProcess = startDashboard(port, webDir, configPath);
             spinner.succeed(`Dashboard starting on http://localhost:${port}`);
             console.log(chalk.dim("  (Dashboard will be ready in a few seconds)\n"));
           }
