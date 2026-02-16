@@ -119,6 +119,7 @@ function resolveProject(
 
 /**
  * Start dashboard server in the background.
+ * Runs the full dev script which starts Next.js + WebSocket terminal servers.
  * Returns the child process handle for cleanup.
  */
 function startDashboard(port: number, webDir: string, configPath: string): ChildProcess {
@@ -127,7 +128,11 @@ function startDashboard(port: number, webDir: string, configPath: string): Child
   // Pass config path to dashboard so it uses the same config as ao start
   env["AO_CONFIG_PATH"] = configPath;
 
-  const child = spawn("npx", ["next", "dev", "-p", String(port)], {
+  // Set PORT for Next.js dev server (used by dev:next script)
+  env["PORT"] = String(port);
+
+  // Run full dev script (Next.js + terminal WebSocket servers)
+  const child = spawn("pnpm", ["run", "dev"], {
     cwd: webDir,
     stdio: "inherit",
     detached: false,
