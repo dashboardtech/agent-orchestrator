@@ -284,8 +284,8 @@ describe("batch-spawn command", () => {
   });
 
   it("skips issues that already have sessions (duplicate detection)", async () => {
-    // Create existing session metadata
-    writeFileSync(join(tmpDir, "app-1"), "branch=feat/INT-100\nissue=INT-100\n");
+    // Create existing session metadata with project field (required for duplicate detection)
+    writeFileSync(join(tmpDir, "app-1"), "branch=feat/INT-100\nissue=INT-100\nproject=my-app\n");
 
     mockTmux.mockImplementation(async (...args: string[]) => {
       if (args[0] === "list-sessions") return "app-1";

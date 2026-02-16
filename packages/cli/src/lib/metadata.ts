@@ -52,7 +52,8 @@ export async function findSessionForIssue(
     if (!tmuxSessions.includes(name)) continue;
     const meta = readMetadata(join(sessionDir, file));
     // Skip sessions from other projects if projectId is specified
-    if (projectId && meta?.project && meta.project !== projectId) continue;
+    // Stricter check: sessions without a project field are also excluded
+    if (projectId && meta?.project !== projectId) continue;
     if (meta?.issue && meta.issue.toLowerCase() === lower) {
       return name;
     }
