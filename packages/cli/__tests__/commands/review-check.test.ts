@@ -95,10 +95,8 @@ afterEach(() => {
 
 describe("review-check command", () => {
   it("reports no pending reviews when none exist", async () => {
-    const sessionDir = join(tmpDir, "my-app-sessions");
-    mkdirSync(sessionDir, { recursive: true });
     writeFileSync(
-      join(sessionDir, "app-1"),
+      join(tmpDir, "app-1"),
       "branch=feat/fix\npr=https://github.com/org/my-app/pull/10\n",
     );
 
@@ -122,10 +120,8 @@ describe("review-check command", () => {
   });
 
   it("finds sessions with pending review comments", async () => {
-    const sessionDir = join(tmpDir, "my-app-sessions");
-    mkdirSync(sessionDir, { recursive: true });
     writeFileSync(
-      join(sessionDir, "app-1"),
+      join(tmpDir, "app-1"),
       "branch=feat/fix\npr=https://github.com/org/my-app/pull/10\n",
     );
 
@@ -169,10 +165,8 @@ describe("review-check command", () => {
   });
 
   it("skips sessions with non-matching prefix", async () => {
-    const sessionDir = join(tmpDir, "my-app-sessions");
-    mkdirSync(sessionDir, { recursive: true });
     writeFileSync(
-      join(sessionDir, "other-1"),
+      join(tmpDir, "other-1"),
       "branch=feat/fix\npr=https://github.com/org/my-app/pull/10\n",
     );
 
@@ -188,10 +182,8 @@ describe("review-check command", () => {
   });
 
   it("sends fix prompt when not in dry-run mode", async () => {
-    const sessionDir = join(tmpDir, "my-app-sessions");
-    mkdirSync(sessionDir, { recursive: true });
     writeFileSync(
-      join(sessionDir, "app-1"),
+      join(tmpDir, "app-1"),
       "branch=feat/fix\npr=https://github.com/org/my-app/pull/10\n",
     );
 
@@ -226,10 +218,8 @@ describe("review-check command", () => {
   });
 
   it("handles gh returning null (API failure)", async () => {
-    const sessionDir = join(tmpDir, "my-app-sessions");
-    mkdirSync(sessionDir, { recursive: true });
     writeFileSync(
-      join(sessionDir, "app-1"),
+      join(tmpDir, "app-1"),
       "branch=feat/fix\npr=https://github.com/org/my-app/pull/10\n",
     );
 
@@ -247,10 +237,8 @@ describe("review-check command", () => {
   });
 
   it("handles malformed GraphQL response gracefully", async () => {
-    const sessionDir = join(tmpDir, "my-app-sessions");
-    mkdirSync(sessionDir, { recursive: true });
     writeFileSync(
-      join(sessionDir, "app-1"),
+      join(tmpDir, "app-1"),
       "branch=feat/fix\npr=https://github.com/org/my-app/pull/10\n",
     );
 

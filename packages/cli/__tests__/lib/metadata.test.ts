@@ -11,7 +11,6 @@ import {
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import {
-  getSessionDir,
   readMetadata,
   writeMetadata,
   archiveMetadata,
@@ -27,16 +26,6 @@ beforeEach(() => {
 
 afterEach(() => {
   rmSync(tmpDir, { recursive: true, force: true });
-});
-
-describe("getSessionDir", () => {
-  it("returns correct path for project", () => {
-    expect(getSessionDir("/data", "my-app")).toBe("/data/my-app-sessions");
-  });
-
-  it("handles nested data dirs", () => {
-    expect(getSessionDir("/home/user/.ao", "backend")).toBe("/home/user/.ao/backend-sessions");
-  });
 });
 
 describe("readMetadata", () => {

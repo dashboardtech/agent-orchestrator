@@ -3,10 +3,6 @@ import { readdir } from "node:fs/promises";
 import { join, basename } from "node:path";
 import type { SessionMetadata } from "@composio/ao-core";
 
-export function getSessionDir(dataDir: string, projectId: string): string {
-  return join(dataDir, `${projectId}-sessions`);
-}
-
 export function readMetadata(filePath: string): Partial<SessionMetadata> | null {
   if (!existsSync(filePath)) return null;
   const content = readFileSync(filePath, "utf-8");

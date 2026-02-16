@@ -11,7 +11,7 @@ import {
   type ProjectConfig,
 } from "@composio/ao-core";
 import { exec, git, getTmuxSessions } from "../lib/shell.js";
-import { getSessionDir, writeMetadata, findSessionForIssue } from "../lib/metadata.js";
+import { writeMetadata, findSessionForIssue } from "../lib/metadata.js";
 import { banner } from "../lib/format.js";
 import { getAgent } from "../lib/plugins.js";
 import { escapeRegex } from "../lib/session-utils.js";
@@ -198,12 +198,11 @@ async function spawnSession(
 
     spinner.text = "Writing metadata";
 
-    // Write metadata
-    const sessionDir = getSessionDir(config.dataDir, projectId);
-    mkdirSync(sessionDir, { recursive: true });
+    // Write metadata to flat directory (consistent with session-manager.ts)
+    mkdirSync(config.dataDir, { recursive: true });
     const liveBranch = await git(["branch", "--show-current"], worktreePath);
 
-    writeMetadata(join(sessionDir, sessionName), {
+    writeMetadata(join(config.dataDir, sessionName), {
       worktree: worktreePath,
       branch: liveBranch || branch || "detached",
       status: "spawning",
@@ -306,7 +305,6 @@ export function registerBatchSpawn(program: Command): void {
       console.log();
 
       let allTmux = await getTmuxSessions();
-      const sessionDir = getSessionDir(config.dataDir, projectId);
       const created: Array<{ session: string; issue: string }> = [];
       const skipped: Array<{ issue: string; existing: string }> = [];
       const failed: Array<{ issue: string; error: string }> = [];
@@ -319,7 +317,7 @@ export function registerBatchSpawn(program: Command): void {
           skipped.push({ issue, existing: "(this batch)" });
           continue;
         }
-        const existing = await findSessionForIssue(sessionDir, issue, allTmux);
+        const existing = await findSessionForIssue(config.dataDir, issue, allTmux);
         if (existing) {
           console.log(chalk.yellow(`  Skip ${issue} — already has session: ${existing}`));
           skipped.push({ issue, existing });

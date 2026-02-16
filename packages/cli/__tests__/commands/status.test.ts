@@ -165,14 +165,12 @@ describe("status command", () => {
 
   it("displays sessions from tmux with metadata", async () => {
     // Create metadata files
-    const sessionDir = join(tmpDir, "my-app-sessions");
-    mkdirSync(sessionDir, { recursive: true });
     writeFileSync(
-      join(sessionDir, "app-1"),
+      join(tmpDir, "app-1"),
       "worktree=/tmp/wt/app-1\nbranch=feat/INT-100\nstatus=working\nissue=INT-100\n",
     );
     writeFileSync(
-      join(sessionDir, "app-2"),
+      join(tmpDir, "app-2"),
       "worktree=/tmp/wt/app-2\nbranch=feat/INT-200\nstatus=pr_open\npr=https://github.com/org/repo/pull/42\n",
     );
 
@@ -199,9 +197,7 @@ describe("status command", () => {
   });
 
   it("counts total sessions correctly", async () => {
-    const sessionDir = join(tmpDir, "my-app-sessions");
-    mkdirSync(sessionDir, { recursive: true });
-    writeFileSync(join(sessionDir, "app-1"), "branch=main\nstatus=idle\n");
+    writeFileSync(join(tmpDir, "app-1"), "branch=main\nstatus=idle\n");
 
     mockTmux.mockImplementation(async (...args: string[]) => {
       if (args[0] === "list-sessions") return "app-1";
@@ -217,10 +213,8 @@ describe("status command", () => {
   });
 
   it("shows plural for multiple sessions", async () => {
-    const sessionDir = join(tmpDir, "my-app-sessions");
-    mkdirSync(sessionDir, { recursive: true });
-    writeFileSync(join(sessionDir, "app-1"), "branch=a\nstatus=idle\n");
-    writeFileSync(join(sessionDir, "app-2"), "branch=b\nstatus=idle\n");
+    writeFileSync(join(tmpDir, "app-1"), "branch=a\nstatus=idle\n");
+    writeFileSync(join(tmpDir, "app-2"), "branch=b\nstatus=idle\n");
 
     mockTmux.mockImplementation(async (...args: string[]) => {
       if (args[0] === "list-sessions") return "app-1\napp-2";
@@ -236,10 +230,8 @@ describe("status command", () => {
   });
 
   it("prefers live branch over metadata branch", async () => {
-    const sessionDir = join(tmpDir, "my-app-sessions");
-    mkdirSync(sessionDir, { recursive: true });
     writeFileSync(
-      join(sessionDir, "app-1"),
+      join(tmpDir, "app-1"),
       "worktree=/tmp/wt\nbranch=old-branch\nstatus=working\n",
     );
 
@@ -257,9 +249,7 @@ describe("status command", () => {
   });
 
   it("shows table header with column names", async () => {
-    const sessionDir = join(tmpDir, "my-app-sessions");
-    mkdirSync(sessionDir, { recursive: true });
-    writeFileSync(join(sessionDir, "app-1"), "branch=main\nstatus=idle\n");
+    writeFileSync(join(tmpDir, "app-1"), "branch=main\nstatus=idle\n");
 
     mockTmux.mockImplementation(async (...args: string[]) => {
       if (args[0] === "list-sessions") return "app-1";
@@ -279,10 +269,8 @@ describe("status command", () => {
   });
 
   it("shows PR number, CI status, review decision, and threads", async () => {
-    const sessionDir = join(tmpDir, "my-app-sessions");
-    mkdirSync(sessionDir, { recursive: true });
     writeFileSync(
-      join(sessionDir, "app-1"),
+      join(tmpDir, "app-1"),
       "worktree=/tmp/wt\nbranch=feat/test\nstatus=working\n",
     );
 
@@ -334,10 +322,8 @@ describe("status command", () => {
   });
 
   it("shows failing CI and changes_requested review", async () => {
-    const sessionDir = join(tmpDir, "my-app-sessions");
-    mkdirSync(sessionDir, { recursive: true });
     writeFileSync(
-      join(sessionDir, "app-1"),
+      join(tmpDir, "app-1"),
       "worktree=/tmp/wt\nbranch=feat/broken\nstatus=working\n",
     );
 
@@ -371,9 +357,10 @@ describe("status command", () => {
   });
 
   it("handles SCM errors gracefully", async () => {
-    const sessionDir = join(tmpDir, "my-app-sessions");
-    mkdirSync(sessionDir, { recursive: true });
-    writeFileSync(join(sessionDir, "app-1"), "worktree=/tmp/wt\nbranch=feat/err\nstatus=working\n");
+    writeFileSync(
+      join(tmpDir, "app-1"),
+      "worktree=/tmp/wt\nbranch=feat/err\nstatus=working\n",
+    );
 
     mockTmux.mockImplementation(async (...args: string[]) => {
       if (args[0] === "list-sessions") return "app-1";
@@ -393,10 +380,8 @@ describe("status command", () => {
   });
 
   it("outputs JSON with enriched fields", async () => {
-    const sessionDir = join(tmpDir, "my-app-sessions");
-    mkdirSync(sessionDir, { recursive: true });
     writeFileSync(
-      join(sessionDir, "app-1"),
+      join(tmpDir, "app-1"),
       "worktree=/tmp/wt\nbranch=feat/json\nstatus=working\n",
     );
 
@@ -433,10 +418,8 @@ describe("status command", () => {
   });
 
   it("falls back to PR number from metadata URL when SCM fails", async () => {
-    const sessionDir = join(tmpDir, "my-app-sessions");
-    mkdirSync(sessionDir, { recursive: true });
     writeFileSync(
-      join(sessionDir, "app-1"),
+      join(tmpDir, "app-1"),
       "worktree=/tmp/wt\nbranch=feat/pr-meta\nstatus=working\npr=https://github.com/org/repo/pull/99\n",
     );
 
@@ -457,10 +440,8 @@ describe("status command", () => {
   });
 
   it("shows null pendingThreads when getPendingComments fails", async () => {
-    const sessionDir = join(tmpDir, "my-app-sessions");
-    mkdirSync(sessionDir, { recursive: true });
     writeFileSync(
-      join(sessionDir, "app-1"),
+      join(tmpDir, "app-1"),
       "worktree=/tmp/wt\nbranch=feat/thr-err\nstatus=working\n",
     );
 
@@ -494,10 +475,8 @@ describe("status command", () => {
   });
 
   it("falls back to metadata status for activity when introspection unavailable", async () => {
-    const sessionDir = join(tmpDir, "my-app-sessions");
-    mkdirSync(sessionDir, { recursive: true });
     writeFileSync(
-      join(sessionDir, "app-1"),
+      join(tmpDir, "app-1"),
       "worktree=/tmp/wt\nbranch=feat/meta-act\nstatus=working\n",
     );
 
@@ -520,10 +499,8 @@ describe("status command", () => {
   });
 
   it("treats assistant lastMessageType as idle, not active", async () => {
-    const sessionDir = join(tmpDir, "my-app-sessions");
-    mkdirSync(sessionDir, { recursive: true });
     writeFileSync(
-      join(sessionDir, "app-1"),
+      join(tmpDir, "app-1"),
       "worktree=/tmp/wt\nbranch=feat/asst\nstatus=working\n",
     );
 

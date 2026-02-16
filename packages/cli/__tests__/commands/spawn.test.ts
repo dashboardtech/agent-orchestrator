@@ -194,10 +194,7 @@ describe("spawn command", () => {
 
     await program.parseAsync(["node", "test", "spawn", "my-app", "INT-100"]);
 
-    const sessionDir = join(tmpDir, "my-app-sessions");
-    expect(existsSync(sessionDir)).toBe(true);
-
-    const metaFile = join(sessionDir, "app-1");
+    const metaFile = join(tmpDir, "app-1");
     expect(existsSync(metaFile)).toBe(true);
 
     const content = readFileSync(metaFile, "utf-8");
@@ -288,9 +285,7 @@ describe("batch-spawn command", () => {
 
   it("skips issues that already have sessions (duplicate detection)", async () => {
     // Create existing session metadata
-    const sessionDir = join(tmpDir, "my-app-sessions");
-    mkdirSync(sessionDir, { recursive: true });
-    writeFileSync(join(sessionDir, "app-1"), "branch=feat/INT-100\nissue=INT-100\n");
+    writeFileSync(join(tmpDir, "app-1"), "branch=feat/INT-100\nissue=INT-100\n");
 
     mockTmux.mockImplementation(async (...args: string[]) => {
       if (args[0] === "list-sessions") return "app-1";
