@@ -33,6 +33,8 @@ jobs:
     name: Dependency Review
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
+    # Note: Requires GitHub Advanced Security (available for public repos or Enterprise)
+    continue-on-error: true  # Don't fail the build if this feature is unavailable
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
