@@ -367,16 +367,16 @@ describe("detectActivity", () => {
     expect(agent.detectActivity("Press up to edit queued messages\n")).toBe("active");
   });
 
-  it("returns idle when shell prompt is visible", () => {
-    expect(agent.detectActivity("some output\n> ")).toBe("idle");
-    expect(agent.detectActivity("some output\n$ ")).toBe("idle");
+  it("returns ready when shell prompt is visible", () => {
+    expect(agent.detectActivity("some output\n> ")).toBe("ready");
+    expect(agent.detectActivity("some output\n$ ")).toBe("ready");
   });
 
-  it("returns idle when prompt follows historical activity indicators", () => {
+  it("returns ready when prompt follows historical activity indicators", () => {
     // Key regression test: historical "Reading file..." output in the buffer
-    // should NOT override an idle prompt on the last line.
-    expect(agent.detectActivity("Reading file src/index.ts\nWriting to out.ts\n❯ ")).toBe("idle");
-    expect(agent.detectActivity("Thinking...\nSearching codebase...\n$ ")).toBe("idle");
+    // should NOT override a ready prompt on the last line.
+    expect(agent.detectActivity("Reading file src/index.ts\nWriting to out.ts\n❯ ")).toBe("ready");
+    expect(agent.detectActivity("Thinking...\nSearching codebase...\n$ ")).toBe("ready");
   });
 
   it("returns waiting_input when permission prompt follows historical activity", () => {

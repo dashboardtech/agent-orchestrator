@@ -441,10 +441,10 @@ function classifyTerminalOutput(terminalOutput: string): ActivityState {
   const lines = terminalOutput.trim().split("\n");
   const lastLine = lines[lines.length - 1]?.trim() ?? "";
 
-  // Check the last line FIRST — if the prompt is visible, the agent is idle
+  // Check the last line FIRST — if the prompt is visible, the agent is ready
   // regardless of historical output (e.g. "Reading file..." from earlier).
   // The ❯ is Claude Code's prompt character.
-  if (/^[❯>$#]\s*$/.test(lastLine)) return "idle";
+  if (/^[❯>$#]\s*$/.test(lastLine)) return "ready";
 
   // Check the bottom of the buffer for permission prompts BEFORE checking
   // full-buffer active indicators. Historical "Thinking"/"Reading" text in
@@ -673,8 +673,8 @@ function createClaudeCodeAgent(): Agent {
 
         case "assistant":
         case "system":
-          // Agent finished its turn, waiting for user input
-          return "idle";
+          // Agent finished its turn, ready for user input
+          return "ready";
 
         case "permission_request":
           // Agent needs user approval for an action
