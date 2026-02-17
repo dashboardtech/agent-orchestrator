@@ -242,6 +242,8 @@ export function registerStart(program: Command): void {
 
           // Create orchestrator tmux session (unless --no-orchestrator or already exists)
           if (opts?.orchestrator !== false) {
+            const sessionsDir = getSessionsDir(config.configPath, project.path);
+
             // Check if orchestrator session already exists
             exists = await hasTmuxSession(sessionId);
 
@@ -253,9 +255,9 @@ export function registerStart(program: Command): void {
               );
 
               // Update metadata with current dashboard port
-              const existingMetadata = readMetadata(config.dataDir, sessionId);
+              const existingMetadata = readMetadata(sessionsDir, sessionId);
               if (existingMetadata) {
-                writeMetadata(config.dataDir, sessionId, {
+                writeMetadata(sessionsDir, sessionId, {
                   ...existingMetadata,
                   dashboardPort: port,
                 });
@@ -280,7 +282,6 @@ export function registerStart(program: Command): void {
 
                 // Get agent instance (used for hooks and launch)
                 const agent = getAgent(config, projectId);
-                const sessionsDir = getSessionsDir(config.configPath, project.path);
 
                 // Setup agent hooks for automatic metadata updates
                 spinner.start("Configuring agent hooks");
@@ -425,7 +426,7 @@ export function registerStop(program: Command): void {
 
         // Read port from metadata (actual port used), fallback to config default
         const metadata = readMetadata(sessionsDir, sessionId);
-        const port = metadata?.dashboardPort ? Number(metadata.dashboardPort) : config.port;
+        const port = metadata?.dashboardPort ? Number(metadata.dashboardPort) : (config.port ?? 3000);
 
         console.log(chalk.bold(`\nStopping orchestrator for ${chalk.cyan(project.name)}\n`));
 
