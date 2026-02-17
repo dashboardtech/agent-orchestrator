@@ -129,16 +129,50 @@ end_step "Step 7: Dashboard API responding"
 # Step 8: Verify WebSocket terminal servers
 start_step "Step 8: Verify WebSocket servers"
 
-# Check if direct terminal WebSocket server is running
-if ! curl -sf http://localhost:3003/health > /dev/null 2>&1; then
-    echo -e "${YELLOW}  Warning: Direct terminal WebSocket server not responding${NC}"
-    echo -e "${YELLOW}  (This is expected if pnpm dev is not running all services)${NC}"
+# Check if direct terminal WebSocket server is running (required for terminal feature)
+echo "  Checking WebSocket server on port 3003..."
+max_retries=10
+for i in $(seq 1 $max_retries); do
+    if curl -sf http://localhost:3003/health > /dev/null 2>&1; then
+        echo "  ✓ WebSocket server responding"
+        break
+    fi
+    if [ $i -eq $max_retries ]; then
+        fail_step "Step 8: WebSocket terminal server not responding (bug: ao start didn't launch all services)"
+    fi
+    sleep 1
+done
+
+end_step "Step 8: WebSocket servers verified"
+
+# Step 9: Verify orchestrator terminal page (end-to-end test)
+start_step "Step 9: Verify orchestrator terminal feature"
+
+# Create orchestrator session first (so we have something to test)
+echo "  Creating test orchestrator session..."
+tmux new-session -d -s test-project-orchestrator || true
+
+# Write minimal metadata
+mkdir -p /tmp/ao-test-data
+cat > /tmp/ao-test-data/test-project-orchestrator << 'EOF'
+worktree=/tmp/ao-test-project
+branch=main
+status=working
+project=test-project
+EOF
+
+# Test that the session detail page loads (where terminal would be)
+if ! curl -sf http://localhost:4000/sessions/test-project-orchestrator > /dev/null; then
+    fail_step "Step 9: Orchestrator session page failed to load"
 fi
 
-end_step "Step 8: WebSocket server check completed"
+# Cleanup test session
+tmux kill-session -t test-project-orchestrator 2>/dev/null || true
 
-# Step 9: Cleanup
-start_step "Step 9: Cleanup"
+end_step "Step 9: Orchestrator terminal page accessible"
+
+# Step 10: Cleanup
+start_step "Step 10: Cleanup"
 kill $DASHBOARD_PID 2>/dev/null || true
 # Wait for process to exit
 sleep 2
@@ -149,7 +183,7 @@ kill -9 $DASHBOARD_PID 2>/dev/null || true
 pkill -f "node.*next.*dev" || true
 pkill -f "tsx.*terminal" || true
 
-end_step "Step 9: Cleanup completed"
+end_step "Step 10: Cleanup completed"
 
 # Calculate total time
 end_time=$(date +%s)
