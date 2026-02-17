@@ -31,7 +31,7 @@ import {
   type Notifier,
   type Session,
   type EventPriority,
-  type ProjectConfig,
+  type ProjectConfig as _ProjectConfig,
 } from "./types.js";
 import { updateMetadata } from "./metadata.js";
 import { getSessionsDir, generateProjectId } from "./paths.js";
@@ -220,7 +220,10 @@ export function createLifecycleManager(deps: LifecycleManagerDeps): LifecycleMan
       } catch {
         // On probe failure, preserve current stuck/needs_input state rather
         // than letting the fallback at the bottom coerce them to "working"
-        if (session.status === SESSION_STATUS.STUCK || session.status === SESSION_STATUS.NEEDS_INPUT) {
+        if (
+          session.status === SESSION_STATUS.STUCK ||
+          session.status === SESSION_STATUS.NEEDS_INPUT
+        ) {
           return session.status;
         }
       }

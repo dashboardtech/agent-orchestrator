@@ -197,11 +197,21 @@ describe("findSessionForIssue", () => {
     writeFileSync(join(sessionDir, "backend-1"), "issue=INT-100\nproject=project-b\n");
 
     // Should only find project-a's session
-    const resultA = await findSessionForIssue(sessionDir, "INT-100", ["app-1", "backend-1"], "project-a");
+    const resultA = await findSessionForIssue(
+      sessionDir,
+      "INT-100",
+      ["app-1", "backend-1"],
+      "project-a",
+    );
     expect(resultA).toBe("app-1");
 
     // Should only find project-b's session
-    const resultB = await findSessionForIssue(sessionDir, "INT-100", ["app-1", "backend-1"], "project-b");
+    const resultB = await findSessionForIssue(
+      sessionDir,
+      "INT-100",
+      ["app-1", "backend-1"],
+      "project-b",
+    );
     expect(resultB).toBe("backend-1");
 
     // Without projectId filter, should find first match
@@ -218,7 +228,12 @@ describe("findSessionForIssue", () => {
     writeFileSync(join(sessionDir, "app-1"), "issue=INT-100\nproject=project-a\n");
 
     // Should NOT find legacy session when filtering by project
-    const result = await findSessionForIssue(sessionDir, "INT-100", ["legacy-1", "app-1"], "project-a");
+    const result = await findSessionForIssue(
+      sessionDir,
+      "INT-100",
+      ["legacy-1", "app-1"],
+      "project-a",
+    );
     expect(result).toBe("app-1");
 
     // Without projectId filter, should find one of the sessions (order not guaranteed)

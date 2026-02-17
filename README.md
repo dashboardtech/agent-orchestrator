@@ -17,6 +17,7 @@ cd ~/your-project && ao init --auto && ao start
 Agent Orchestrator spawns and manages multiple AI coding agents working in parallel on your repository. Each agent works in isolation (separate worktrees), handles its own PR lifecycle, and auto-responds to CI failures and review comments.
 
 **Key benefits:**
+
 - 🚀 **10-30x productivity** - Work on 10+ issues simultaneously
 - 🤖 **Human-in-the-loop** - Agents notify you when judgment needed, not for routine work
 - 🔌 **Fully pluggable** - Swap any component (runtime, agent, tracker, SCM)
@@ -37,16 +38,16 @@ Agent Orchestrator spawns and manages multiple AI coding agents working in paral
 
 8 plugin slots - every abstraction is swappable:
 
-| Slot      | Interface   | Default   | Alternatives          |
-|-----------|-------------|-----------|-----------------------|
-| Runtime   | `Runtime`   | tmux      | docker, k8s, process  |
-| Agent     | `Agent`     | claude-code | codex, aider, opencode |
-| Workspace | `Workspace` | worktree  | clone                 |
-| Tracker   | `Tracker`   | github    | linear, jira          |
-| SCM       | `SCM`       | github    | (gitlab, bitbucket)   |
-| Notifier  | `Notifier`  | desktop   | slack, composio, webhook |
-| Terminal  | `Terminal`  | iterm2    | web                   |
-| Lifecycle | core        | —         | —                     |
+| Slot      | Interface   | Default     | Alternatives             |
+| --------- | ----------- | ----------- | ------------------------ |
+| Runtime   | `Runtime`   | tmux        | docker, k8s, process     |
+| Agent     | `Agent`     | claude-code | codex, aider, opencode   |
+| Workspace | `Workspace` | worktree    | clone                    |
+| Tracker   | `Tracker`   | github      | linear, jira             |
+| SCM       | `SCM`       | github      | (gitlab, bitbucket)      |
+| Notifier  | `Notifier`  | desktop     | slack, composio, webhook |
+| Terminal  | `Terminal`  | iterm2      | web                      |
+| Lifecycle | core        | —           | —                        |
 
 ## Installation
 
@@ -67,6 +68,7 @@ bash scripts/setup.sh
 ```
 
 The setup script:
+
 - Installs dependencies with pnpm
 - Builds all packages
 - Rebuilds node-pty from source (fixes terminal issues)
@@ -81,6 +83,7 @@ ao start        # Launches orchestrator + dashboard
 ```
 
 **Auto-detection:**
+
 - Git repo and remote
 - Project type (languages, frameworks, test runners)
 - Generates custom agent rules based on your stack
@@ -175,6 +178,7 @@ See `agent-orchestrator.yaml.example` for full reference.
 ## Examples
 
 See `examples/` directory for:
+
 - `simple-github.yaml` - Minimal GitHub Issues setup
 - `linear-team.yaml` - Linear integration
 - `multi-project.yaml` - Multiple repos
@@ -210,6 +214,7 @@ packages/
 See [TROUBLESHOOTING.md](TROUBLESHOOTING.md) for common issues and solutions.
 
 **Most common:**
+
 - Terminal not working → node-pty rebuild (automatic via postinstall hook)
 - Port in use → Kill existing server or change port in config
 - Config not found → Run `ao init` from your project directory

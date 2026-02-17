@@ -11,7 +11,7 @@
 import { createHash } from "node:crypto";
 import { dirname, basename, join } from "node:path";
 import { homedir } from "node:os";
-import { realpathSync, existsSync, writeFileSync, readFileSync } from "node:fs";
+import { realpathSync, existsSync, writeFileSync, readFileSync, mkdirSync } from "node:fs";
 
 /**
  * Generate a 12-character hash from a config directory path.
@@ -188,7 +188,6 @@ export function validateAndStoreOrigin(configPath: string, projectPath: string):
   } else {
     // Create project base directory and .origin file
     const baseDir = getProjectBaseDir(configPath, projectPath);
-    const { mkdirSync } = require("node:fs");
     mkdirSync(baseDir, { recursive: true });
     writeFileSync(originPath, resolvedConfigPath, "utf-8");
   }

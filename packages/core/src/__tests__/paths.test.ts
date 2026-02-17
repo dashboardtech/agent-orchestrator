@@ -3,7 +3,16 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { mkdtempSync, writeFileSync, symlinkSync, rmSync, realpathSync } from "node:fs";
+import {
+  mkdtempSync,
+  writeFileSync,
+  symlinkSync,
+  rmSync,
+  realpathSync,
+  mkdirSync,
+  existsSync,
+  readFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -57,7 +66,6 @@ describe("Hash Generation", () => {
   it("different paths produce different hashes", () => {
     const dir1 = join(tmpDir, "config1");
     const dir2 = join(tmpDir, "config2");
-    const { mkdirSync } = require("node:fs");
     mkdirSync(dir1, { recursive: true });
     mkdirSync(dir2, { recursive: true });
 
@@ -75,7 +83,6 @@ describe("Hash Generation", () => {
   it("resolves symlinks before hashing", () => {
     const realDir = join(tmpDir, "real");
     const symlinkDir = join(tmpDir, "symlink");
-    const { mkdirSync } = require("node:fs");
     mkdirSync(realDir, { recursive: true });
 
     const realConfig = join(realDir, "agent-orchestrator.yaml");
@@ -157,7 +164,6 @@ describe("Instance ID Generation", () => {
 
   it("different config + same project = different instance IDs", () => {
     const otherDir = join(tmpdir(), "other-config-test");
-    const { mkdirSync } = require("node:fs");
     mkdirSync(otherDir, { recursive: true });
     const config2Path = join(otherDir, "agent-orchestrator.yaml");
     writeFileSync(config2Path, "projects: {}");
@@ -415,7 +421,6 @@ describe("Origin File Management", () => {
     validateAndStoreOrigin(configPath, projectPath);
 
     const originPath = getOriginFilePath(configPath, projectPath);
-    const { existsSync, readFileSync } = require("node:fs");
 
     expect(existsSync(originPath)).toBe(true);
 
@@ -465,11 +470,8 @@ describe("Origin File Management", () => {
   it("creates parent directory if needed", () => {
     // Remove the auto-created directory
     const baseDir = getProjectBaseDir(configPath, projectPath);
-    const { existsSync } = require("node:fs");
 
-    // Before validation, directory shouldn't exist
-    const initialExists = existsSync(baseDir);
-
+    // Validate and store origin (creates directory)
     validateAndStoreOrigin(configPath, projectPath);
 
     // After validation, directory should exist

@@ -41,16 +41,7 @@ import {
   reserveSessionId,
 } from "./metadata.js";
 import { buildPrompt } from "./prompt-builder.js";
-import {
-  getSessionsDir,
-  getWorktreesDir,
-  getArchiveDir,
-  generateSessionName,
-  generateTmuxName,
-  generateSessionPrefix,
-  validateAndStoreOrigin,
-  generateProjectId,
-} from "./paths.js";
+import { getSessionsDir, generateTmuxName, validateAndStoreOrigin } from "./paths.js";
 
 /** Escape regex metacharacters in a string. */
 function escapeRegex(str: string): string {
@@ -166,13 +157,6 @@ export function createSessionManager(deps: SessionManagerDeps): SessionManager {
    */
   function getProjectSessionsDir(project: ProjectConfig): string {
     return getSessionsDir(config.configPath, project.path);
-  }
-
-  /**
-   * Get the worktrees directory for a project.
-   */
-  function getProjectWorktreesDir(project: ProjectConfig): string {
-    return getWorktreesDir(config.configPath, project.path);
   }
 
   /**

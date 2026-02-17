@@ -21,6 +21,7 @@ projects:
 ```
 
 **Problems**:
+
 - Multiple configs sharing same `dataDir` caused session collisions
 - Manual path configuration required
 - No isolation between orchestrator instances
@@ -38,6 +39,7 @@ projects:
 ```
 
 **Benefits**:
+
 - Zero configuration — paths auto-derived from config location
 - Complete isolation — each config gets unique namespace
 - Collision-free — SHA256 hash prevents conflicts
@@ -89,13 +91,16 @@ Three levels of naming for compatibility:
 ### 1. Config File Changes
 
 **REMOVED fields** (will cause validation errors if present):
+
 - `dataDir`
 - `worktreeDir`
 
 **REQUIRED field**:
+
 - `configPath` (automatically set by `loadConfig()`)
 
 **Migration**:
+
 ```diff
 # agent-orchestrator.yaml
 - dataDir: ~/.ao-sessions
@@ -109,6 +114,7 @@ projects:
 ### 2. Metadata File Locations
 
 **Before**:
+
 ```
 ~/.ao-sessions/
 ├── int-1          # Flat directory, all projects mixed
@@ -118,6 +124,7 @@ projects:
 ```
 
 **After**:
+
 ```
 ~/.agent-orchestrator/
 ├── a3b4c5d6e7f8-integrator/sessions/
@@ -133,6 +140,7 @@ projects:
 ### 3. Worktree Locations
 
 **Before**:
+
 ```
 ~/.ao-worktrees/
 ├── integrator/
@@ -144,6 +152,7 @@ projects:
 ```
 
 **After**:
+
 ```
 ~/.agent-orchestrator/
 ├── a3b4c5d6e7f8-integrator/worktrees/
@@ -159,11 +168,13 @@ projects:
 ### 4. Environment Variables
 
 **Before**:
+
 ```bash
 AO_DATA_DIR=~/.ao-sessions          # Flat path
 ```
 
 **After**:
+
 ```bash
 AO_DATA_DIR=~/.agent-orchestrator/a3b4c5d6e7f8-integrator/sessions/
 ```
@@ -173,15 +184,17 @@ AO_DATA_DIR=~/.agent-orchestrator/a3b4c5d6e7f8-integrator/sessions/
 ### 5. API Changes (For Plugin Developers)
 
 **Removed from `OrchestratorConfig`**:
+
 ```typescript
 interface OrchestratorConfig {
-  dataDir: string;      // REMOVED
-  worktreeDir: string;  // REMOVED
-  configPath: string;   // NOW REQUIRED
+  dataDir: string; // REMOVED
+  worktreeDir: string; // REMOVED
+  configPath: string; // NOW REQUIRED
 }
 ```
 
 **New Path Utilities** (use these instead):
+
 ```typescript
 import {
   getSessionsDir,
@@ -209,6 +222,7 @@ vim ~/path/to/agent-orchestrator.yaml
 ```
 
 Remove these lines:
+
 ```yaml
 dataDir: ~/.ao-sessions
 worktreeDir: ~/.ao-worktrees
@@ -311,6 +325,7 @@ tmux ls
 If you need to rollback to the old architecture:
 
 1. **Checkout previous commit** (before hash-based migration):
+
    ```bash
    git checkout <commit-before-migration>
    pnpm install
@@ -318,6 +333,7 @@ If you need to rollback to the old architecture:
    ```
 
 2. **Restore old config**:
+
    ```bash
    # Add back to agent-orchestrator.yaml
    dataDir: ~/.ao-sessions
@@ -325,6 +341,7 @@ If you need to rollback to the old architecture:
    ```
 
 3. **Restore old metadata** (if archived):
+
    ```bash
    mv ~/.ao-sessions-backup-20260217 ~/.ao-sessions
    ```
@@ -343,12 +360,14 @@ If you need to rollback to the old architecture:
 ### Q: Will my PRs be lost?
 
 **A**: No! PRs are on GitHub, not in local sessions. You can:
+
 1. Check `gh pr list` to see all open PRs
 2. Spawn new sessions for PRs that need work: `ao spawn integrator --branch feat/existing-branch`
 
 ### Q: What about in-progress work?
 
 **A**: Git worktrees contain your code changes. Before killing sessions:
+
 1. Commit or stash changes in each worktree
 2. Note which issues/branches were being worked on
 3. After migration, spawn new sessions and continue work
@@ -394,6 +413,7 @@ No conflicts, complete isolation!
 ### Q: How do I find the hash for my config?
 
 **A**:
+
 ```bash
 # Calculate hash for your config directory
 echo -n "/path/to/your/config/dir" | sha256sum | cut -c1-12
@@ -433,6 +453,7 @@ For bugs or questions, file an issue: https://github.com/composiohq/agent-orches
 ## Summary
 
 **Action Required**:
+
 1. ✅ Remove `dataDir` and `worktreeDir` from config
 2. ✅ Kill all existing sessions (`tmux kill-server`)
 3. ✅ Clean up old git worktrees (`git worktree remove --force`)

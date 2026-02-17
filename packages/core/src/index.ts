@@ -9,7 +9,13 @@
 export * from "./types.js";
 
 // Config — YAML loader + validation
-export { loadConfig, loadConfigWithPath, validateConfig, getDefaultConfig, findConfig } from "./config.js";
+export {
+  loadConfig,
+  loadConfigWithPath,
+  validateConfig,
+  getDefaultConfig,
+  findConfig,
+} from "./config.js";
 
 // Plugin registry
 export { createPluginRegistry } from "./plugin-registry.js";

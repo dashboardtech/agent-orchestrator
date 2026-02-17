@@ -26,11 +26,7 @@ import {
   getSessionsDir,
   generateTmuxName,
 } from "@composio/ao-core";
-import {
-  isTmuxAvailable,
-  killSessionsByPrefix,
-  killSession,
-} from "./helpers/tmux.js";
+import { isTmuxAvailable, killSessionsByPrefix, killSession } from "./helpers/tmux.js";
 
 const tmuxOk = await isTmuxAvailable();
 
@@ -287,5 +283,4 @@ describe.skipIf(!tmuxOk)("CLI-Core integration (hash-based architecture)", () =>
     expect(sessionsDirA).toContain("project-a");
     expect(sessionsDirB).toContain("project-b");
   });
-
 });

@@ -309,9 +309,7 @@ export function registerStatus(program: Command): void {
         // Gather all session info in parallel
         const infoPromises = projectSessions
           .sort()
-          .map((session) =>
-            gatherSessionInfo(session, sessionsDir, agent, scm, projectConfig),
-          );
+          .map((session) => gatherSessionInfo(session, sessionsDir, agent, scm, projectConfig));
         const sessionInfos = await Promise.all(infoPromises);
 
         for (const info of sessionInfos) {

@@ -11,6 +11,7 @@ This document outlines the testing strategy for the new hash-based project isola
 ### 1.1 Path Utilities (`packages/core/src/__tests__/paths.test.ts`)
 
 **Test Suite: Hash Generation**
+
 - ✅ `generateConfigHash()` produces 12-character hex string
 - ✅ Same config path produces same hash (deterministic)
 - ✅ Different config paths produce different hashes
@@ -18,18 +19,21 @@ This document outlines the testing strategy for the new hash-based project isola
 - ✅ Hash collision probability calculation (document expected collision rate)
 
 **Test Suite: Project ID Generation**
+
 - ✅ `generateProjectId()` extracts basename correctly
 - ✅ Handles paths with trailing slashes
 - ✅ Handles relative paths
 - ✅ Handles paths with special characters
 
 **Test Suite: Instance ID Generation**
+
 - ✅ `generateInstanceId()` combines hash and project ID correctly
 - ✅ Same config + same project = same instance ID
 - ✅ Same config + different projects = different instance IDs (same hash prefix)
 - ✅ Different config + same project = different instance IDs (different hash)
 
 **Test Suite: Session Prefix Generation**
+
 - ✅ `≤4 chars` → use as-is (lowercase): `"foo"` → `"foo"`
 - ✅ CamelCase → extract uppercase: `"PyTorch"` → `"pt"`
 - ✅ Single uppercase → first 3 chars: `"Integrator"` → `"int"`
@@ -39,6 +43,7 @@ This document outlines the testing strategy for the new hash-based project isola
 - ✅ Edge cases: single char, numbers, special chars
 
 **Test Suite: Path Construction**
+
 - ✅ `getProjectBaseDir()` returns correct format: `~/.agent-orchestrator/{hash}-{projectId}`
 - ✅ `getSessionsDir()` returns: `{baseDir}/sessions`
 - ✅ `getWorktreesDir()` returns: `{baseDir}/worktrees`
@@ -48,6 +53,7 @@ This document outlines the testing strategy for the new hash-based project isola
 - ✅ `expandHome()` handles non-home paths
 
 **Test Suite: Session Naming**
+
 - ✅ `generateSessionName()` format: `{prefix}-{num}`
 - ✅ `generateTmuxName()` format: `{hash}-{prefix}-{num}`
 - ✅ `parseTmuxName()` correctly extracts components
@@ -56,6 +62,7 @@ This document outlines the testing strategy for the new hash-based project isola
 - ✅ Tmux name ALWAYS includes hash for global uniqueness
 
 **Test Suite: Origin File Management**
+
 - ✅ `validateAndStoreOrigin()` creates .origin file on first use
 - ✅ `.origin` contains resolved config path
 - ✅ Second call with same config path succeeds (no error)
@@ -68,6 +75,7 @@ This document outlines the testing strategy for the new hash-based project isola
 ### 1.2 Config Loading & Validation (`packages/core/src/__tests__/config.test.ts`)
 
 **Test Suite: Config Discovery**
+
 - ✅ `findConfig()` finds config in current directory
 - ✅ Searches up directory tree (like git)
 - ✅ Stops at filesystem root
@@ -77,6 +85,7 @@ This document outlines the testing strategy for the new hash-based project isola
 - ✅ Returns null if no config found
 
 **Test Suite: Config Loading**
+
 - ✅ `loadConfigWithPath()` sets `configPath` in config object
 - ✅ `loadConfigWithPath()` resolves symlinks in config path
 - ✅ `loadConfig()` works without explicit path (uses discovery)
@@ -85,12 +94,14 @@ This document outlines the testing strategy for the new hash-based project isola
 - ✅ New configs without `dataDir`/`worktreeDir` work
 
 **Test Suite: Project Uniqueness Validation**
+
 - ✅ Duplicate project IDs (same basename) → clear error
 - ✅ Error message shows conflicting paths
 - ✅ Error message suggests fix (rename directories)
 - ✅ Unique basenames pass validation
 
 **Test Suite: Session Prefix Validation**
+
 - ✅ Duplicate explicit prefixes → error
 - ✅ Duplicate auto-generated prefixes → error
 - ✅ Error shows both projects with collision
@@ -99,6 +110,7 @@ This document outlines the testing strategy for the new hash-based project isola
 - ✅ Mix of explicit and auto-generated prefixes validated correctly
 
 **Test Suite: Config Schema**
+
 - ✅ `dataDir` and `worktreeDir` are optional
 - ✅ `projects` is required
 - ✅ Project `path`, `repo`, `defaultBranch` are required
@@ -110,6 +122,7 @@ This document outlines the testing strategy for the new hash-based project isola
 ### 1.3 Metadata Operations (`packages/core/src/__tests__/metadata.test.ts`)
 
 **Test Suite: Metadata Read/Write**
+
 - ✅ `writeMetadata()` includes `tmuxName` field
 - ✅ `readMetadata()` parses `tmuxName` field
 - ✅ `tmuxName` is optional (backwards compatibility)
@@ -117,6 +130,7 @@ This document outlines the testing strategy for the new hash-based project isola
 - ✅ All existing metadata fields preserved
 
 **Test Suite: Archive Operations**
+
 - ✅ `deleteMetadata()` with archive=true moves to `archive/` subdir
 - ✅ Archive filename includes timestamp
 - ✅ Archive timestamp format is filesystem-safe (no colons)
@@ -127,6 +141,7 @@ This document outlines the testing strategy for the new hash-based project isola
 ### 1.4 Session Manager (`packages/core/src/__tests__/session-manager.test.ts`)
 
 **Test Suite: Directory Resolution**
+
 - ✅ New architecture: uses hash-based paths when `configPath` is set
 - ✅ Legacy: uses flat `dataDir` when `configPath` is null
 - ✅ Throws error if neither `configPath` nor `dataDir` is set
@@ -134,6 +149,7 @@ This document outlines the testing strategy for the new hash-based project isola
 - ✅ `getProjectWorktreesDir()` returns correct path for each mode
 
 **Test Suite: Session Listing (New Architecture)**
+
 - ✅ `list()` scans all project directories
 - ✅ `list(projectId)` filters by project correctly
 - ✅ Sessions from different projects are isolated
@@ -141,11 +157,13 @@ This document outlines the testing strategy for the new hash-based project isola
 - ✅ Non-existent project directories skipped
 
 **Test Suite: Session Listing (Legacy)**
+
 - ✅ `list()` scans flat directory
 - ✅ Filters by `project` field in metadata
 - ✅ Sessions without `project` field handled gracefully
 
 **Test Suite: Session Spawning (New Architecture)**
+
 - ✅ Generates user-facing session name: `{prefix}-{num}`
 - ✅ Generates tmux name: `{hash}-{prefix}-{num}`
 - ✅ Writes metadata with `tmuxName` field
@@ -157,6 +175,7 @@ This document outlines the testing strategy for the new hash-based project isola
 - ✅ Runtime receives tmux name, not user-facing name
 
 **Test Suite: Session Operations**
+
 - ✅ `get()` finds session across all projects
 - ✅ `get()` returns null if session not found
 - ✅ `kill()` finds session and cleans up correctly
@@ -170,12 +189,14 @@ This document outlines the testing strategy for the new hash-based project isola
 ### 2.1 CLI-Core Integration (`packages/integration-tests/src/cli-spawn-core-read.integration.test.ts`)
 
 **Already Exists (Update Required):**
+
 - ✅ Update to use new hash-based paths
 - ✅ Verify CLI spawn writes to project-specific directory
 - ✅ Verify core session-manager reads from project-specific directory
 - ✅ Test cross-project isolation
 
 **New Tests to Add:**
+
 - ✅ Session spawned by CLI is found by `ao list`
 - ✅ Session spawned by CLI is found by `ao list <projectId>`
 - ✅ Session metadata includes `tmuxName` field
@@ -190,6 +211,7 @@ This document outlines the testing strategy for the new hash-based project isola
 ### 2.2 Multi-Project Integration (`packages/integration-tests/src/multi-project.integration.test.ts`)
 
 **Test Suite: Same Config, Multiple Projects**
+
 - ✅ Create config with 2 projects (frontend, backend)
 - ✅ Spawn session for project 1
 - ✅ Spawn session for project 2
@@ -201,6 +223,7 @@ This document outlines the testing strategy for the new hash-based project isola
 - ✅ Same issue ID in different projects doesn't conflict
 
 **Test Suite: Different Configs, Same Project Name**
+
 - ✅ Create two separate orchestrator configs
 - ✅ Both manage a project named "integrator"
 - ✅ Projects have different hashes
@@ -213,6 +236,7 @@ This document outlines the testing strategy for the new hash-based project isola
 ### 2.3 Config Discovery Integration (`packages/integration-tests/src/config-discovery.integration.test.ts`)
 
 **Test Suite: Directory Tree Search**
+
 - ✅ Config in CWD is found
 - ✅ Config in parent directory is found
 - ✅ Config in grandparent directory is found
@@ -220,11 +244,13 @@ This document outlines the testing strategy for the new hash-based project isola
 - ✅ Nearest config is used (not furthest)
 
 **Test Suite: Environment Variable Override**
+
 - ✅ `AO_CONFIG` set → uses specified config
 - ✅ `AO_CONFIG` takes precedence over file search
 - ✅ Invalid `AO_CONFIG` path → error
 
 **Test Suite: Symlink Handling**
+
 - ✅ Symlinked config file → consistent hash
 - ✅ Symlink to config directory → consistent hash
 - ✅ Multiple symlinks to same config → same hash
@@ -234,6 +260,7 @@ This document outlines the testing strategy for the new hash-based project isola
 ### 2.4 Session Lifecycle Integration (`packages/integration-tests/src/session-lifecycle.integration.test.ts`)
 
 **Test Suite: Full Lifecycle**
+
 - ✅ Spawn session → metadata created in correct directory
 - ✅ Spawn session → tmux session created with hash-prefixed name
 - ✅ List sessions → spawned session appears
@@ -242,6 +269,7 @@ This document outlines the testing strategy for the new hash-based project isola
 - ✅ Kill session → metadata archived, tmux destroyed
 
 **Test Suite: Concurrent Operations**
+
 - ✅ Spawn 2 sessions simultaneously → both succeed
 - ✅ Session numbers don't conflict
 - ✅ Atomic ID reservation prevents race conditions
@@ -251,6 +279,7 @@ This document outlines the testing strategy for the new hash-based project isola
 ### 2.5 Migration Path (`packages/integration-tests/src/migration.integration.test.ts`)
 
 **Test Suite: Legacy to New Migration (Future)**
+
 - ✅ Detect old flat directory structure
 - ✅ Migrate sessions to project-specific directories
 - ✅ Preserve all metadata fields
@@ -263,27 +292,32 @@ This document outlines the testing strategy for the new hash-based project isola
 ## 3. Edge Cases & Error Handling
 
 ### 3.1 Hash Collision
+
 - ✅ Simulate hash collision (different configs, force same hash)
 - ✅ Verify `.origin` file detects collision
 - ✅ Error message is clear and actionable
 
 ### 3.2 Invalid Session Names
+
 - ✅ Session name with path traversal attempt → rejected
 - ✅ Session name with special chars → validated
 - ✅ Very long session names → handled
 
 ### 3.3 Missing Directories
+
 - ✅ Project sessions directory missing → created on spawn
 - ✅ Worktrees directory missing → created on spawn
 - ✅ Archive directory missing → created on archive
 
 ### 3.4 Config Errors
+
 - ✅ No projects in config → error
 - ✅ Project path doesn't exist → error (on spawn)
 - ✅ Invalid project path → error
 - ✅ Circular symlinks in config path → error
 
 ### 3.5 Permissions
+
 - ✅ No write permission to ~/.agent-orchestrator → error
 - ✅ No write permission to project directory → error
 - ✅ Readonly metadata file → handled gracefully
@@ -293,12 +327,14 @@ This document outlines the testing strategy for the new hash-based project isola
 ## 4. Performance Tests
 
 ### 4.1 Scalability
+
 - ✅ 100 sessions across 10 projects → list() performance
 - ✅ 1000 sessions across 100 projects → list() performance
 - ✅ Directory scanning performance with many projects
 - ✅ Session number calculation with 1000+ existing sessions
 
 ### 4.2 Concurrent Access
+
 - ✅ 10 concurrent spawns → no conflicts
 - ✅ List while spawning → consistent results
 - ✅ Kill while listing → no crashes
@@ -308,12 +344,14 @@ This document outlines the testing strategy for the new hash-based project isola
 ## 5. Backwards Compatibility Tests
 
 ### 5.1 Legacy Config Format
+
 - ✅ Config with explicit `dataDir` and `worktreeDir` works
 - ✅ Sessions created in flat directory structure
 - ✅ All operations work in legacy mode
 - ✅ No migration forced immediately
 
 ### 5.2 Mixed Mode
+
 - ✅ Some projects use new arch, some use legacy (via config)
 - ✅ Session manager handles both modes simultaneously
 - ✅ No cross-contamination between modes
@@ -323,11 +361,13 @@ This document outlines the testing strategy for the new hash-based project isola
 ## 6. Documentation Tests
 
 ### 6.1 Examples
+
 - ✅ All examples in ARCHITECTURE.md are accurate
 - ✅ Directory structure examples match actual output
 - ✅ Command examples work as shown
 
 ### 6.2 Migration Guide
+
 - ✅ Step-by-step migration works
 - ✅ Rollback procedure works if needed
 - ✅ Migration FAQ addresses common issues
@@ -337,23 +377,27 @@ This document outlines the testing strategy for the new hash-based project isola
 ## Test Execution Strategy
 
 ### Phase 1: Core Unit Tests (Current Priority)
+
 1. Implement `paths.test.ts` - All path utilities
 2. Update `config.test.ts` - Config loading & validation
 3. Update `metadata.test.ts` - New metadata fields
 4. Update `session-manager.test.ts` - New directory logic
 
 ### Phase 2: Integration Tests
+
 1. Update existing `cli-spawn-core-read.integration.test.ts`
 2. Create `multi-project.integration.test.ts`
 3. Create `config-discovery.integration.test.ts`
 4. Create `session-lifecycle.integration.test.ts`
 
 ### Phase 3: Edge Cases & Performance
+
 1. Implement edge case tests
 2. Add performance benchmarks
 3. Test backwards compatibility thoroughly
 
 ### Phase 4: Documentation & Migration
+
 1. Verify all documentation examples
 2. Implement migration tests
 3. Create migration guide

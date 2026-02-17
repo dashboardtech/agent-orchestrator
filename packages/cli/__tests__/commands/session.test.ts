@@ -31,6 +31,7 @@ vi.mock("../../src/lib/shell.js", () => ({
 }));
 
 vi.mock("@composio/ao-core", async (importOriginal) => {
+  // eslint-disable-next-line @typescript-eslint/consistent-type-imports
   const actual = await importOriginal<typeof import("@composio/ao-core")>();
   return {
     ...actual,
@@ -184,7 +185,10 @@ describe("session kill", () => {
   });
 
   it("kills tmux session and archives metadata", async () => {
-    writeFileSync(join(sessionsDir, "app-1"), "worktree=/tmp/wt\nbranch=feat/fix\nstatus=working\n");
+    writeFileSync(
+      join(sessionsDir, "app-1"),
+      "worktree=/tmp/wt\nbranch=feat/fix\nstatus=working\n",
+    );
 
     mockTmux.mockResolvedValue("");
     mockGit.mockResolvedValue(null);

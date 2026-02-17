@@ -1,6 +1,7 @@
 # Final Architecture Plan
 
 ## Core Principles
+
 1. **Convention over configuration** - Auto-derive everything possible
 2. **Single source of truth** - Config file in repo, runtime data in `~/.agent-orchestrator/`
 3. **Zero path configuration** - All paths determined automatically
@@ -39,14 +40,15 @@ Runtime Data (not versioned):
 ```
 
 **Hash Derivation (from config location):**
+
 ```typescript
-const configDir = path.dirname(configPath);     // /Users/alice/code/agent-orchestrator
-const hash = sha256(configDir).slice(0, 12);    // a3b4c5d6e7f8
+const configDir = path.dirname(configPath); // /Users/alice/code/agent-orchestrator
+const hash = sha256(configDir).slice(0, 12); // a3b4c5d6e7f8
 
 // Each project managed by this config gets a directory
 // Format: {hash}-{projectId}
-const projectId = path.basename(projectPath);   // integrator, backend, etc.
-const instanceId = `${hash}-${projectId}`;      // a3b4c5d6e7f8-integrator
+const projectId = path.basename(projectPath); // integrator, backend, etc.
+const instanceId = `${hash}-${projectId}`; // a3b4c5d6e7f8-integrator
 
 // Not configurable!
 const projectBaseDir = `~/.agent-orchestrator/${instanceId}`;
@@ -64,16 +66,17 @@ const worktreesDir = `${projectBaseDir}/worktrees`;
 # agent-orchestrator.yaml
 
 projects:
-  - path: ~/repos/integrator          # Required: where is the repo?
-    repo: ComposioHQ/integrator       # Required: GitHub repo
-    defaultBranch: next               # Required: base branch
+  - path: ~/repos/integrator # Required: where is the repo?
+    repo: ComposioHQ/integrator # Required: GitHub repo
+    defaultBranch: next # Required: base branch
 
     # Optional overrides:
-    name: Composio Integrator         # Display name (default: folder name)
-    sessionPrefix: int                # Override auto-generated prefix
+    name: Composio Integrator # Display name (default: folder name)
+    sessionPrefix: int # Override auto-generated prefix
 ```
 
 **Auto-derived:**
+
 - Project ID: `basename(path)` → `integrator`
 - Session prefix: `generatePrefix("integrator")` → `int`
 - Worktree path: `{worktreeDir}/integrator/`
@@ -85,6 +88,7 @@ projects:
 ## 3. Session Naming
 
 ### User-Facing Names (Elegant)
+
 ```
 {sessionPrefix}-{num}
 
@@ -94,6 +98,7 @@ ss-1, ss-2      (safe-split)
 ```
 
 ### Tmux Session Names (Globally Unique)
+
 ```
 {hash}-{sessionPrefix}-{num}
 
@@ -103,6 +108,7 @@ f1e2d3c4b5a6-int-1    (different checkout, no collision!)
 ```
 
 ### Prefix Generation (Clean Heuristic)
+
 ```typescript
 function generateSessionPrefix(projectId: string): string {
   if (projectId.length <= 4) return projectId.toLowerCase();
@@ -110,13 +116,17 @@ function generateSessionPrefix(projectId: string): string {
   // CamelCase: PyTorch → pt
   const uppercase = projectId.match(/[A-Z]/g);
   if (uppercase?.length > 1) {
-    return uppercase.join('').toLowerCase();
+    return uppercase.join("").toLowerCase();
   }
 
   // kebab-case: agent-orchestrator → ao
-  if (projectId.includes('-') || projectId.includes('_')) {
-    const sep = projectId.includes('-') ? '-' : '_';
-    return projectId.split(sep).map(w => w[0]).join('').toLowerCase();
+  if (projectId.includes("-") || projectId.includes("_")) {
+    const sep = projectId.includes("-") ? "-" : "_";
+    return projectId
+      .split(sep)
+      .map((w) => w[0])
+      .join("")
+      .toLowerCase();
   }
 
   // Single word: integrator → int
@@ -129,6 +139,7 @@ function generateSessionPrefix(projectId: string): string {
 ## 4. Metadata Storage
 
 ### File Structure (One Directory Per Project)
+
 ```
 ~/.agent-orchestrator/a3b4c5d6e7f8-integrator/
   sessions/
@@ -142,6 +153,7 @@ function generateSessionPrefix(projectId: string): string {
 ```
 
 ### Metadata File Format (key=value)
+
 ```
 project=integrator
 issue=INT-100
@@ -154,6 +166,7 @@ pr=https://github.com/ComposioHQ/integrator/pull/123
 ```
 
 **Key fields:**
+
 - `project` - Which project this session belongs to (for filtering)
 - `issue` - Linear/GitHub issue ID
 - `branch` - Git branch name
@@ -191,6 +204,7 @@ ao info
 ## 6. Multi-Instance Support
 
 ### Same Config → Same Hash
+
 ```yaml
 # ~/code/my-orchestrator/agent-orchestrator.yaml
 projects:
@@ -199,6 +213,7 @@ projects:
 ```
 
 Results in:
+
 ```
 ~/.agent-orchestrator/
   a3b4c5d6e7f8-integrator/        ← Same hash (same config)
@@ -206,6 +221,7 @@ Results in:
 ```
 
 ### Different Config Locations → Different Hashes
+
 ```
 ~/code/orchestrator/              → hash: a3b4c5d6e7f8
 ~/code/orchestrator-v2/           → hash: f1e2d3c4b5a6
@@ -213,6 +229,7 @@ Results in:
 ```
 
 Results in:
+
 ```
 ~/.agent-orchestrator/
   a3b4c5d6e7f8-integrator/        ← From ~/code/orchestrator
@@ -241,10 +258,11 @@ projects:
   - path: ~/repos/backend
     repo: ComposioHQ/backend
     defaultBranch: main
-    sessionPrefix: be    # Override auto-generated "bac"
+    sessionPrefix: be # Override auto-generated "bac"
 ```
 
 **Results in:**
+
 ```
 Config location:
   ~/code/my-orchestrator/
@@ -278,11 +296,13 @@ Commands:
 ## Summary: What Users Configure
 
 **Required (3 fields per project):**
+
 1. `path` - Where is the repo?
 2. `repo` - GitHub owner/repo
 3. `defaultBranch` - Base branch name
 
 **Optional:**
+
 - `sessionPrefix` - Override auto-generated prefix
 - `name` - Display name
 

@@ -157,7 +157,7 @@ function validateProjectUniqueness(config: OrchestratorConfig): void {
   const projectIds = new Set<string>();
   const projectIdToPaths: Record<string, string[]> = {};
 
-  for (const [configKey, project] of Object.entries(config.projects)) {
+  for (const [_configKey, project] of Object.entries(config.projects)) {
     const projectId = basename(project.path);
 
     if (!projectIdToPaths[projectId]) {
@@ -182,7 +182,7 @@ function validateProjectUniqueness(config: OrchestratorConfig): void {
   const prefixes = new Set<string>();
   const prefixToProject: Record<string, string> = {};
 
-  for (const [configKey, project] of Object.entries(config.projects)) {
+  for (const [_configKey, project] of Object.entries(config.projects)) {
     const projectId = basename(project.path);
     const prefix = project.sessionPrefix || generateSessionPrefix(projectId);
 
@@ -366,7 +366,10 @@ export function loadConfig(configPath?: string): OrchestratorConfig {
 }
 
 /** Load config and return both config and resolved path */
-export function loadConfigWithPath(configPath?: string): { config: OrchestratorConfig; path: string } {
+export function loadConfigWithPath(configPath?: string): {
+  config: OrchestratorConfig;
+  path: string;
+} {
   const path = configPath ?? findConfigFile();
 
   if (!path) {
