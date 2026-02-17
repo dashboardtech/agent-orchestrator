@@ -195,7 +195,8 @@ export const manifest = {
 export function toClaudeProjectPath(workspacePath: string): string {
   // Handle Windows drive letters (C:\Users\... → C-Users-...)
   const normalized = workspacePath.replace(/\\/g, "/");
-  return normalized.replace(/^\//, "").replace(/:/g, "").replace(/[/.]/g, "-");
+  // Claude Code replaces / and . with - (keeping the leading slash as a leading -)
+  return normalized.replace(/:/g, "").replace(/[/.]/g, "-");
 }
 
 /** Find the most recently modified .jsonl session file in a directory */
