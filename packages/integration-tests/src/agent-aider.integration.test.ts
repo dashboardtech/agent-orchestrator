@@ -156,6 +156,11 @@ describe.skipIf(!canRun)("agent-aider (integration)", () => {
       expect(["active", "ready", "idle", "waiting_input", "blocked"]).toContain(
         aliveActivityState.state,
       );
+      // When activity is detected, timestamp should be present (feeds lastActivityAt).
+      // Exception: hasRecentCommits detection provides no timestamp.
+      if (aliveActivityState.timestamp !== undefined) {
+        expect(aliveActivityState.timestamp).toBeInstanceOf(Date);
+      }
     }
   });
 

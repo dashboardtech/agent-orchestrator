@@ -701,15 +701,6 @@ function createClaudeCodeAgent(): Agent {
       const sessionFile = await findLatestSessionFile(projectDir);
       if (!sessionFile) return null;
 
-      // Get file modification time
-      let lastLogModified: Date | undefined;
-      try {
-        const fileStat = await stat(sessionFile);
-        lastLogModified = fileStat.mtime;
-      } catch {
-        // Ignore stat errors
-      }
-
       // Parse the JSONL
       const lines = await parseJsonlFile(sessionFile);
       if (lines.length === 0) return null;
@@ -721,7 +712,6 @@ function createClaudeCodeAgent(): Agent {
         summary: extractSummary(lines),
         agentSessionId,
         cost: extractCost(lines),
-        lastLogModified,
       };
     },
 

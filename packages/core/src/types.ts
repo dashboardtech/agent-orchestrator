@@ -357,10 +357,6 @@ export interface AgentSessionInfo {
   agentSessionId: string | null;
   /** Estimated cost so far */
   cost?: CostEstimate;
-  /** Last message type in agent's log */
-  lastMessageType?: string;
-  /** When agent's log was last modified */
-  lastLogModified?: Date;
 }
 
 export interface CostEstimate {

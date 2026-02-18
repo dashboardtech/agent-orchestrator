@@ -252,6 +252,8 @@ describe.skipIf(!canRun)("agent-claude-code (integration)", () => {
       expect(["active", "ready", "idle", "waiting_input", "blocked"]).toContain(
         aliveActivityState.state,
       );
+      // Timestamp must be present — it feeds session.lastActivityAt
+      expect(aliveActivityState.timestamp).toBeInstanceOf(Date);
     }
   });
 

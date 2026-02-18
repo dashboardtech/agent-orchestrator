@@ -525,6 +525,37 @@ describe("list", () => {
     expect(sessions[0].agentInfo?.summary).toBe("Old work");
   });
 
+  it("keeps metadata lastActivityAt when ActivityDetection timestamp is older", async () => {
+    // Timestamp older than the metadata file's mtime should NOT regress lastActivityAt
+    const oldDate = new Date("2020-01-01T00:00:00Z");
+    const agentOldTimestamp: Agent = {
+      ...mockAgent,
+      getActivityState: vi.fn().mockResolvedValue({ state: "active", timestamp: oldDate }),
+    };
+    const registryOldTimestamp: PluginRegistry = {
+      ...mockRegistry,
+      get: vi.fn().mockImplementation((slot: string) => {
+        if (slot === "runtime") return mockRuntime;
+        if (slot === "agent") return agentOldTimestamp;
+        return null;
+      }),
+    };
+
+    writeMetadata(sessionsDir, "app-1", {
+      worktree: "/tmp",
+      branch: "a",
+      status: "working",
+      project: "my-app",
+      runtimeHandle: JSON.stringify(makeHandle("rt-1")),
+    });
+
+    const sm = createSessionManager({ config, registry: registryOldTimestamp });
+    const sessions = await sm.list();
+
+    // lastActivityAt should remain the metadata mtime, not regress to the old date
+    expect(sessions[0].lastActivityAt.getTime()).toBeGreaterThan(oldDate.getTime());
+  });
+
   it("keeps existing activity when getActivityState throws", async () => {
     const agentWithError: Agent = {
       ...mockAgent,
