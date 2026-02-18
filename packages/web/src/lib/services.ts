@@ -17,6 +17,7 @@ import {
   type OrchestratorConfig,
   type PluginRegistry,
   type SessionManager,
+  type Agent,
   type SCM,
   type Tracker,
   type ProjectConfig,
@@ -75,6 +76,17 @@ async function initServices(): Promise<Services> {
   const services = { config, registry, sessionManager };
   globalForServices._aoServices = services;
   return services;
+}
+
+/** Resolve the Agent plugin for a project. Returns null if not configured. */
+export function getAgent(
+  registry: PluginRegistry,
+  project: ProjectConfig | undefined,
+  defaultAgent?: string,
+): Agent | null {
+  const agentName = project?.agent ?? defaultAgent;
+  if (!agentName) return null;
+  return registry.get<Agent>("agent", agentName);
 }
 
 /** Resolve the SCM plugin for a project. Returns null if not configured. */

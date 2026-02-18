@@ -5,9 +5,12 @@
  * (string dates, flattened DashboardPR) suitable for JSON serialization.
  */
 
-import type { Session, SCM, PRInfo, Tracker, ProjectConfig } from "@composio/ao-core";
+import type { Session, Agent, SCM, PRInfo, Tracker, ProjectConfig } from "@composio/ao-core";
 import type { DashboardSession, DashboardPR, DashboardStats } from "./types.js";
-import { prCache, prCacheKey, type PREnrichmentData } from "./cache";
+import { TTLCache, prCache, prCacheKey, type PREnrichmentData } from "./cache";
+
+/** Cache for issue titles (5 min TTL — issue titles rarely change) */
+const issueTitleCache = new TTLCache<string>(300_000);
 
 /** Convert a core Session to a DashboardSession (without PR/issue enrichment). */
 export function sessionToDashboard(session: Session): DashboardSession {
@@ -20,6 +23,7 @@ export function sessionToDashboard(session: Session): DashboardSession {
     issueId: session.issueId, // Deprecated: kept for backwards compatibility
     issueUrl: session.issueId, // issueId is actually the full URL
     issueLabel: null, // Will be enriched by enrichSessionIssue()
+    issueTitle: null, // Will be enriched by enrichSessionIssueTitle()
     summary: session.agentInfo?.summary ?? session.metadata["summary"] ?? null,
     createdAt: session.createdAt.toISOString(),
     lastActivityAt: session.lastActivityAt.toISOString(),
@@ -219,6 +223,75 @@ export function enrichSessionIssue(
     const parts = dashboard.issueUrl.split("/");
     dashboard.issueLabel = parts[parts.length - 1] || dashboard.issueUrl;
   }
+}
+
+/**
+ * Enrich a DashboardSession's summary by calling agent.getSessionInfo().
+ * Only fetches when the session doesn't already have a summary.
+ * Reads the agent's JSONL file on disk — fast local I/O, not an API call.
+ */
+export async function enrichSessionAgentSummary(
+  dashboard: DashboardSession,
+  coreSession: Session,
+  agent: Agent,
+): Promise<void> {
+  if (dashboard.summary) return;
+  try {
+    const info = await agent.getSessionInfo(coreSession);
+    if (info?.summary) {
+      dashboard.summary = info.summary;
+    }
+  } catch {
+    // Can't read agent session info — keep summary null
+  }
+}
+
+/**
+ * Enrich a DashboardSession's issue title by calling tracker.getIssue().
+ * Extracts the identifier from the issue URL using issueLabel(),
+ * then fetches full issue details for the title.
+ */
+export async function enrichSessionIssueTitle(
+  dashboard: DashboardSession,
+  tracker: Tracker,
+  project: ProjectConfig,
+): Promise<void> {
+  if (!dashboard.issueUrl || !dashboard.issueLabel) return;
+
+  // Check cache first
+  const cached = issueTitleCache.get(dashboard.issueUrl);
+  if (cached) {
+    dashboard.issueTitle = cached;
+    return;
+  }
+
+  try {
+    // Strip "#" prefix from GitHub-style labels to get the identifier
+    const identifier = dashboard.issueLabel.replace(/^#/, "");
+    const issue = await tracker.getIssue(identifier, project);
+    if (issue.title) {
+      dashboard.issueTitle = issue.title;
+      issueTitleCache.set(dashboard.issueUrl, issue.title);
+    }
+  } catch {
+    // Can't fetch issue — keep issueTitle null
+  }
+}
+
+/**
+ * Humanize a git branch name into a readable title.
+ * e.g., "feat/infer-project-id" → "Infer Project ID"
+ *       "fix/broken-auth-flow"  → "Broken Auth Flow"
+ *       "session/ao-52"         → "ao-52"
+ */
+export function humanizeBranch(branch: string): string {
+  // Remove common prefixes (feat/, fix/, chore/, session/, etc.)
+  const withoutPrefix = branch.replace(/^(?:feat|fix|chore|refactor|docs|test|ci|session)\//, "");
+  // Replace hyphens and underscores with spaces, then title-case each word
+  return withoutPrefix
+    .replace(/[-_]/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase())
+    .trim();
 }
 
 /** Compute dashboard stats from a list of sessions. */

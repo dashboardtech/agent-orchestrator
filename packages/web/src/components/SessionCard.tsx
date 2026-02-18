@@ -11,6 +11,7 @@ import {
 import { CI_STATUS } from "@composio/ao-core/types";
 import { cn } from "@/lib/cn";
 import { activityIcon } from "@/lib/activity-icons";
+import { humanizeBranch } from "@/lib/serialize";
 import { PRStatus } from "./PRStatus";
 import { CICheckList } from "./CIBadge";
 
@@ -90,7 +91,10 @@ export function SessionCard({ session, onSend, onKill, onMerge, onRestore }: Ses
           {session.id}
         </span>
         <span className="min-w-0 flex-1 truncate text-sm font-medium text-[var(--color-text-primary)]">
-          {pr?.title ?? session.summary ?? session.status}
+          {pr?.title ??
+            session.summary ??
+            session.issueTitle ??
+            (session.branch ? humanizeBranch(session.branch) : session.status)}
         </span>
         {isRestorable && (
           <button
@@ -196,6 +200,7 @@ export function SessionCard({ session, onSend, onKill, onMerge, onRestore }: Ses
                 className="text-xs text-[var(--color-accent-blue)] hover:underline"
               >
                 {session.issueLabel || session.issueUrl}
+                {session.issueTitle && `: ${session.issueTitle}`}
               </a>
             </DetailSection>
           )}

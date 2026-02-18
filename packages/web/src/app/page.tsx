@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import { Dashboard } from "@/components/Dashboard";
 import type { DashboardSession } from "@/lib/types";
-import { getServices, getSCM, getTracker } from "@/lib/services";
+import { getServices, getAgent, getSCM, getTracker } from "@/lib/services";
 import {
   sessionToDashboard,
   enrichSessionPR,
   enrichSessionIssue,
+  enrichSessionAgentSummary,
+  enrichSessionIssueTitle,
   computeStats,
 } from "@/lib/serialize";
 import { prCache, prCacheKey } from "@/lib/cache";
@@ -56,6 +58,43 @@ export default async function Home() {
       if (!tracker || !project) return;
       enrichSessionIssue(sessions[i], tracker, project);
     });
+
+    // Enrich agent summaries for sessions that don't have one yet
+    // (reads agent's JSONL file — local I/O, not an API call)
+    const summaryPromises = coreSessions.map((core, i) => {
+      if (sessions[i].summary) return Promise.resolve();
+      let project = config.projects[core.projectId];
+      if (!project) {
+        const entry = Object.entries(config.projects).find(([, p]) =>
+          core.id.startsWith(p.sessionPrefix),
+        );
+        if (entry) project = entry[1];
+      }
+      const agent = getAgent(registry, project, config.defaults.agent);
+      if (!agent) return Promise.resolve();
+      return enrichSessionAgentSummary(sessions[i], core, agent);
+    });
+
+    // Enrich issue titles for sessions that have issues
+    const issueTitlePromises = coreSessions.map((core, i) => {
+      if (!sessions[i].issueUrl || !sessions[i].issueLabel) return Promise.resolve();
+      let project = config.projects[core.projectId];
+      if (!project) {
+        const entry = Object.entries(config.projects).find(([, p]) =>
+          core.id.startsWith(p.sessionPrefix),
+        );
+        if (entry) project = entry[1];
+      }
+      if (!project) {
+        const firstKey = Object.keys(config.projects)[0];
+        if (firstKey) project = config.projects[firstKey];
+      }
+      const tracker = getTracker(registry, project);
+      if (!tracker || !project) return Promise.resolve();
+      return enrichSessionIssueTitle(sessions[i], tracker, project);
+    });
+
+    await Promise.allSettled([...summaryPromises, ...issueTitlePromises]);
 
     // Enrich sessions that have PRs with live SCM data
     // Skip enrichment for terminal sessions (merged, closed, done, terminated)

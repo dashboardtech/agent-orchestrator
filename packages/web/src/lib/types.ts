@@ -64,6 +64,7 @@ export interface DashboardSession {
   issueId: string | null; // Deprecated: use issueUrl instead
   issueUrl: string | null; // Full issue URL
   issueLabel: string | null; // Human-readable label (e.g., "INT-1327", "#42")
+  issueTitle: string | null; // Full issue title (e.g., "Add user authentication flow")
   summary: string | null;
   createdAt: string;
   lastActivityAt: string;
