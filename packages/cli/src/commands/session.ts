@@ -116,17 +116,19 @@ export function registerSession(program: Command): void {
           }
         }
 
-        if (result.killed.length === 0) {
+        if (result.killed.length === 0 && result.errors.length === 0) {
           console.log(chalk.dim("  No sessions to clean up."));
         } else {
           for (const id of result.killed) {
             console.log(chalk.yellow(`  Would kill ${id}`));
           }
-          console.log(
-            chalk.dim(
-              `\nDry run complete. ${result.killed.length} session${result.killed.length !== 1 ? "s" : ""} would be cleaned.`,
-            ),
-          );
+          if (result.killed.length > 0) {
+            console.log(
+              chalk.dim(
+                `\nDry run complete. ${result.killed.length} session${result.killed.length !== 1 ? "s" : ""} would be cleaned.`,
+              ),
+            );
+          }
         }
       } else {
         const result = await sm.cleanup(opts.project);

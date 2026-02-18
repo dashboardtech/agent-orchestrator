@@ -26,7 +26,7 @@ export async function findRunningDashboardPid(port: number): Promise<string | nu
  * Returns null if the cwd can't be determined.
  */
 export async function findProcessWebDir(pid: string): Promise<string | null> {
-  const lsofDetail = await execSilent("lsof", ["-p", pid, "-Fn"]);
+  const lsofDetail = await execSilent("lsof", ["-p", pid, "-Ffn"]);
   if (!lsofDetail) return null;
 
   // lsof -Fn outputs lines like "n/path/to/cwd" — the cwd entry follows "fcwd"

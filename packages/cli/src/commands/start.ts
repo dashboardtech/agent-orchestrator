@@ -117,7 +117,6 @@ export function registerStart(program: Command): void {
     .description("Start orchestrator agent and dashboard for a project")
     .option("--no-dashboard", "Skip starting the dashboard server")
     .option("--no-orchestrator", "Skip starting the orchestrator agent")
-    .option("--regenerate", "Regenerate CLAUDE.orchestrator.md")
     .option("--rebuild", "Clean and rebuild dashboard before starting")
     .action(
       async (
@@ -125,7 +124,6 @@ export function registerStart(program: Command): void {
         opts?: {
           dashboard?: boolean;
           orchestrator?: boolean;
-          regenerate?: boolean;
           rebuild?: boolean;
         },
       ) => {
