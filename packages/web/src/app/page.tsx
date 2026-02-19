@@ -92,7 +92,9 @@ export default async function Home() {
       if (!scm) return Promise.resolve();
       return enrichSessionPR(sessions[i], scm, core.pr);
     });
-    await Promise.allSettled(enrichPromises);
+    // Cap enrichment at 4s — if GitHub is slow/rate-limited, serve stale data fast
+    const enrichTimeout = new Promise<void>((resolve) => setTimeout(resolve, 4_000));
+    await Promise.race([Promise.allSettled(enrichPromises), enrichTimeout]);
   } catch {
     // Config not found or services unavailable — show empty dashboard
   }

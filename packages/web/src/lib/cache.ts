@@ -44,11 +44,11 @@ export class TTLCache<T> {
     return entry.value;
   }
 
-  /** Set a cache entry with TTL */
-  set(key: string, value: T): void {
+  /** Set a cache entry with TTL (optional override) */
+  set(key: string, value: T, ttlMs?: number): void {
     this.cache.set(key, {
       value,
-      expiresAt: Date.now() + this.ttlMs,
+      expiresAt: Date.now() + (ttlMs ?? this.ttlMs),
     });
   }
 

@@ -216,9 +216,25 @@ export async function enrichSessionPR(
     dashboard.pr.mergeability.blockers.push("API rate limited or unavailable");
   }
 
-  // Only cache if most calls succeeded — don't persist rate-limited partial data,
-  // so the next refresh retries with real API calls instead of serving stale zeros
-  if (mostFailed) return;
+  // If rate limited, cache the partial data with a long TTL (5 min) so we stop
+  // hammering the API on every page load. The rate-limit blocker flag tells the
+  // UI to show stale-data warnings instead of making decisions on bad data.
+  if (mostFailed) {
+    const rateLimitedData: PREnrichmentData = {
+      state: dashboard.pr.state,
+      title: dashboard.pr.title,
+      additions: dashboard.pr.additions,
+      deletions: dashboard.pr.deletions,
+      ciStatus: dashboard.pr.ciStatus,
+      ciChecks: dashboard.pr.ciChecks,
+      reviewDecision: dashboard.pr.reviewDecision,
+      mergeability: dashboard.pr.mergeability,
+      unresolvedThreads: dashboard.pr.unresolvedThreads,
+      unresolvedComments: dashboard.pr.unresolvedComments,
+    };
+    prCache.set(cacheKey, rateLimitedData, 5 * 60_000); // 5 min — don't retry until reset
+    return;
+  }
 
   const cacheData: PREnrichmentData = {
     state: dashboard.pr.state,

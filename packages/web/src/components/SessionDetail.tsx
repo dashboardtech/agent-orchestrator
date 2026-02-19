@@ -188,7 +188,7 @@ export function SessionDetail({ session, isOrchestrator = false, orchestratorZon
     color: "var(--color-text-muted)",
   };
 
-  const accentColor = isOrchestrator ? "var(--color-accent-violet)" : "var(--color-accent)";
+  const accentColor = "var(--color-accent)";
   const terminalVariant = isOrchestrator ? "orchestrator" : "agent";
 
   // Terminal height: for orchestrator, fill more of the viewport (less content above)
@@ -486,7 +486,7 @@ function PRCard({ pr, sessionId }: { pr: DashboardPR; sessionId: string }) {
           {pr.state === "merged" && (
             <>
               <span className="text-[var(--color-text-tertiary)]">&middot;</span>
-              <span className="font-semibold text-[var(--color-accent-violet)]">Merged</span>
+              <span className="font-semibold text-[var(--color-text-secondary)]">Merged</span>
             </>
           )}
         </div>

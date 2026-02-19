@@ -24,24 +24,27 @@ interface SessionCardProps {
 }
 
 function ActivityDot({ activity }: { activity: string | null }) {
-  const colorMap: Record<string, string> = {
-    active: "var(--color-status-working)",
-    ready: "var(--color-status-ready)",
-    idle: "var(--color-status-idle)",
-    waiting_input: "var(--color-status-attention)",
-    blocked: "var(--color-status-error)",
-    exited: "var(--color-status-done)",
+  const config: Record<string, { label: string; dot: string; bg: string; text: string }> = {
+    active:        { label: "active",        dot: "var(--color-status-working)",   bg: "rgba(88,166,255,0.1)",   text: "var(--color-status-working)" },
+    ready:         { label: "ready",         dot: "var(--color-status-ready)",     bg: "rgba(63,185,80,0.1)",    text: "var(--color-status-ready)" },
+    idle:          { label: "idle",          dot: "var(--color-status-idle)",      bg: "rgba(72,79,88,0.25)",    text: "var(--color-text-secondary)" },
+    waiting_input: { label: "waiting",       dot: "var(--color-status-attention)", bg: "rgba(210,153,34,0.12)",  text: "var(--color-status-attention)" },
+    blocked:       { label: "blocked",       dot: "var(--color-status-error)",     bg: "rgba(248,81,73,0.1)",    text: "var(--color-status-error)" },
+    exited:        { label: "exited",        dot: "var(--color-status-done)",      bg: "rgba(48,54,61,0.5)",     text: "var(--color-text-muted)" },
   };
-  const color = (activity && colorMap[activity]) ?? "var(--color-text-tertiary)";
+  const c = (activity != null && config[activity]) || { label: activity ?? "unknown", dot: "var(--color-text-tertiary)", bg: "rgba(74,74,74,0.2)", text: "var(--color-text-muted)" };
   const isPulsing = activity === "active";
   return (
-    <div
-      className={cn(
-        "h-2 w-2 shrink-0 rounded-full",
-        isPulsing && "animate-[activity-pulse_2s_ease-in-out_infinite]",
-      )}
-      style={{ background: color }}
-    />
+    <span
+      className="inline-flex shrink-0 items-center gap-1 rounded-full px-1.5 py-0.5"
+      style={{ background: c.bg }}
+    >
+      <span
+        className={cn("h-1.5 w-1.5 shrink-0 rounded-full", isPulsing && "animate-[activity-pulse_2s_ease-in-out_infinite]")}
+        style={{ background: c.dot }}
+      />
+      <span className="text-[10px] font-medium" style={{ color: c.text }}>{c.label}</span>
+    </span>
   );
 }
 
@@ -87,11 +90,11 @@ export function SessionCard({ session, onSend, onKill, onMerge, onRestore }: Ses
     <div
       className={cn(
         "cursor-pointer border border-[var(--color-border-default)] border-l-[3px]",
-        "bg-[var(--color-bg-surface)] transition-colors duration-200",
+        "bg-[var(--color-bg-surface)] backdrop-blur-sm transition-colors duration-200",
         "hover:border-[var(--color-border-strong)] hover:bg-[var(--color-bg-elevated)]",
         borderColorByLevel[level],
         expanded && "border-[var(--color-border-strong)] bg-[var(--color-bg-elevated)]",
-        isReadyToMerge && "border-[rgba(34,197,94,0.3)] bg-[rgba(34,197,94,0.025)]",
+        isReadyToMerge && "border-[rgba(144,219,168,0.3)] bg-[rgba(144,219,168,0.04)]",
         pr?.state === "merged" && "opacity-55",
       )}
       style={{ borderRadius: 7 }}
@@ -110,7 +113,7 @@ export function SessionCard({ session, onSend, onKill, onMerge, onRestore }: Ses
         {isRestorable && (
           <button
             onClick={(e) => { e.stopPropagation(); onRestore?.(session.id); }}
-            className="rounded border border-[rgba(209,134,22,0.35)] px-2 py-0.5 text-[11px] text-[var(--color-accent)] transition-colors hover:bg-[rgba(209,134,22,0.1)]"
+            className="rounded border border-[rgba(88,166,255,0.35)] px-2 py-0.5 text-[11px] text-[var(--color-accent)] transition-colors hover:bg-[rgba(88,166,255,0.1)]"
           >
             restore
           </button>
@@ -150,8 +153,9 @@ export function SessionCard({ session, onSend, onKill, onMerge, onRestore }: Ses
       {rateLimited && pr?.state === "open" && (
         <div className="px-4 pb-3">
           <span className="inline-flex items-center gap-1 text-[10px] text-[var(--color-text-muted)]">
-            <svg className="h-3 w-3 text-[var(--color-status-attention)]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+            <svg className="h-3 w-3 text-[var(--color-text-tertiary)]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10" />
+              <path d="M12 8v4M12 16h.01" />
             </svg>
             PR data rate limited
           </span>
@@ -192,7 +196,7 @@ export function SessionCard({ session, onSend, onKill, onMerge, onRestore }: Ses
                     <button
                       onClick={(e) => { e.stopPropagation(); handleAction(alert.key, alert.actionMessage ?? ""); }}
                       disabled={sendingAction === alert.key}
-                      className="rounded border border-[rgba(209,134,22,0.25)] px-2 py-0.5 text-[11px] text-[var(--color-accent)] transition-colors hover:bg-[rgba(209,134,22,0.1)] disabled:opacity-50"
+                      className="rounded border border-[rgba(88,166,255,0.25)] px-2 py-0.5 text-[11px] text-[var(--color-accent)] transition-colors hover:bg-[rgba(88,166,255,0.1)] disabled:opacity-50"
                     >
                       {sendingAction === alert.key ? "sent!" : alert.actionLabel}
                     </button>
@@ -274,7 +278,7 @@ export function SessionCard({ session, onSend, onKill, onMerge, onRestore }: Ses
             {isRestorable && (
               <button
                 onClick={(e) => { e.stopPropagation(); onRestore?.(session.id); }}
-                className="rounded border border-[rgba(209,134,22,0.35)] px-2.5 py-1 text-[11px] text-[var(--color-accent)] transition-colors hover:bg-[rgba(209,134,22,0.1)]"
+                className="rounded border border-[rgba(88,166,255,0.35)] px-2.5 py-1 text-[11px] text-[var(--color-accent)] transition-colors hover:bg-[rgba(88,166,255,0.1)]"
               >
                 restore session
               </button>
