@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo } from "react";
 import {
   type DashboardSession,
   type DashboardStats,
@@ -85,30 +85,21 @@ export function Dashboard({ sessions, stats, orchestratorId, projectName }: Dash
     <div className="mx-auto max-w-[1100px] px-8 py-8">
       <DynamicFavicon sessions={sessions} projectName={projectName} />
       {/* Header */}
-      <div className="mb-7 flex items-center justify-between">
-        <h1 className="text-[20px] font-semibold tracking-[-0.02em]">
-          <span className="text-[var(--color-accent)]">Agent</span>{" "}
-          <span className="text-[var(--color-text-primary)]">Orchestrator</span>
+      <div className="mb-9 flex items-center justify-between border-b border-[var(--color-border-subtle)] pb-5">
+        <h1 className="text-[15px] font-medium tracking-[-0.01em] text-[var(--color-text-primary)]">
+          Orchestrator
         </h1>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-5">
+          <StatusLine stats={stats} />
           {orchestratorId && (
             <a
               href={`/sessions/${encodeURIComponent(orchestratorId)}`}
-              className="rounded border border-[var(--color-border-default)] px-3 py-1 text-[11px] text-[var(--color-text-secondary)] transition-colors hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] hover:no-underline"
+              className="text-[11px] text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-text-tertiary)] hover:no-underline"
             >
-              orchestrator →
+              orchestrator ↗
             </a>
           )}
-          <ClientTimestamp />
         </div>
-      </div>
-
-      {/* Stats bar */}
-      <div className="mb-8 flex gap-6 px-1">
-        <Stat value={stats.totalSessions} label="sessions" color="var(--color-accent)" />
-        <Stat value={stats.workingSessions} label="working" color="var(--color-status-ready)" />
-        <Stat value={stats.openPRs} label="open PRs" color="var(--color-accent-violet)" />
-        <Stat value={stats.needsReview} label="need review" color="var(--color-status-attention)" />
       </div>
 
       {/* Attention zones */}
@@ -171,22 +162,40 @@ export function Dashboard({ sessions, stats, orchestratorId, projectName }: Dash
   );
 }
 
-/** Renders timestamp client-side only to avoid hydration mismatch. */
-function ClientTimestamp() {
-  const [time, setTime] = useState<string>("");
-  useEffect(() => {
-    setTime(new Date().toLocaleString());
-  }, []);
-  return <span className="text-xs text-[var(--color-text-muted)]">{time}</span>;
-}
+function StatusLine({ stats }: { stats: DashboardStats }) {
+  if (stats.totalSessions === 0) {
+    return <span className="text-[12px] text-[var(--color-text-muted)]">no sessions</span>;
+  }
 
-function Stat({ value, label, color }: { value: number; label: string; color: string }) {
+  const parts: Array<{ value: number; label: string; alert?: boolean }> = [
+    { value: stats.totalSessions, label: "sessions" },
+    ...(stats.workingSessions > 0 ? [{ value: stats.workingSessions, label: "working" }] : []),
+    ...(stats.openPRs > 0 ? [{ value: stats.openPRs, label: "PRs" }] : []),
+    ...(stats.needsReview > 0
+      ? [{ value: stats.needsReview, label: "need review", alert: true }]
+      : []),
+  ];
+
   return (
-    <div className="flex items-baseline gap-1.5">
-      <span className="text-[26px] font-bold leading-none tracking-tight" style={{ color }}>
-        {value}
-      </span>
-      <span className="text-[12px] text-[var(--color-text-tertiary)]">{label}</span>
+    <div className="flex items-center">
+      {parts.map((p, i) => (
+        <span key={p.label} className="flex items-center">
+          {i > 0 && (
+            <span className="mx-2.5 text-[10px] text-[var(--color-border-strong)]">·</span>
+          )}
+          <span
+            className="text-[12px]"
+            style={{
+              color: p.alert
+                ? "var(--color-status-attention)"
+                : "var(--color-text-secondary)",
+            }}
+          >
+            <span className="font-medium tabular-nums">{p.value}</span>{" "}
+            <span style={{ color: "var(--color-text-muted)" }}>{p.label}</span>
+          </span>
+        </span>
+      ))}
     </div>
   );
 }

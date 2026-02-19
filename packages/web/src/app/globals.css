@@ -53,8 +53,8 @@
   --color-accent-purple:  #bc8cff;
 
   /* ── Typography — set via next/font CSS variables in layout.tsx ──── */
-  --font-sans: var(--font-inter), "SF Pro Display", -apple-system, system-ui, sans-serif;
-  --font-mono: var(--font-jetbrains-mono), "SF Mono", "Menlo", "Consolas", monospace;
+  --font-sans: var(--font-ibm-plex-sans), "SF Pro Text", -apple-system, system-ui, sans-serif;
+  --font-mono: var(--font-ibm-plex-mono), "SF Mono", "Menlo", "Consolas", monospace;
 
   /* ── Border radius (from Linear's verified --radius-* tokens) ────── */
   --radius-sm: 4px;
@@ -71,7 +71,9 @@
 
 body {
   font-family: var(--font-sans);
-  background: var(--color-bg-base);
+  background:
+    radial-gradient(ellipse 80% 40% at 50% -10%, rgba(91, 126, 248, 0.04) 0%, transparent 70%),
+    var(--color-bg-base);
   color: var(--color-text-primary);
   min-height: 100vh;
   letter-spacing: -0.011em;

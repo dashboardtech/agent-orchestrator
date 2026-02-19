@@ -68,38 +68,29 @@ export function AttentionZone({
 
   return (
     <div className="mb-7">
-      {/* Zone header: [●] LABEL ─────────── [count] [▾] */}
+      {/* Zone header: [●] LABEL ──────────────────────────────── count [▾] */}
       <button
-        className="mb-3 flex w-full items-center gap-2 px-1 text-left"
+        className="mb-3 flex w-full items-center gap-2.5 py-0.5 text-left"
         onClick={() => setCollapsed(!collapsed)}
       >
-        {/* Status dot */}
+        {/* Semantic dot — only zone-colored element */}
         <div
-          className="h-2 w-2 shrink-0 rounded-full"
+          className="h-1.5 w-1.5 shrink-0 rounded-full"
           style={{ background: config.color }}
         />
-        {/* Label */}
-        <span
-          className="text-[10px] font-bold uppercase tracking-[0.10em]"
-          style={{ color: config.color }}
-        >
+        {/* Label — neutral, not zone-colored */}
+        <span className="text-[10px] font-medium uppercase tracking-[0.12em] text-[var(--color-text-tertiary)]">
           {config.label}
         </span>
         {/* Divider */}
         <div className="h-px flex-1 bg-[var(--color-border-subtle)]" />
-        {/* Count pill */}
-        <span
-          className="rounded-full px-2 py-0.5 text-[11px] font-semibold"
-          style={{
-            color: config.color,
-            background: `color-mix(in srgb, ${config.color} 10%, transparent)`,
-          }}
-        >
+        {/* Count — plain */}
+        <span className="tabular-nums text-[11px] text-[var(--color-text-muted)]">
           {sessions.length}
         </span>
         {/* Collapse chevron */}
         <svg
-          className="h-3 w-3 shrink-0 text-[var(--color-text-tertiary)] transition-transform duration-150"
+          className="h-3 w-3 shrink-0 text-[var(--color-text-muted)] transition-transform duration-150"
           style={{ transform: collapsed ? "rotate(-90deg)" : "rotate(0deg)" }}
           fill="none"
           stroke="currentColor"
