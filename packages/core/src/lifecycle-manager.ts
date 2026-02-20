@@ -509,7 +509,8 @@ export function createLifecycleManager(deps: LifecycleManagerDeps): LifecycleMan
           try {
             const info = await agent.getSessionInfo(session);
             if (info?.summary && info.summary !== session.metadata?.["summary"]) {
-              updateMetadata(config.dataDir, session.id, { summary: info.summary });
+              const sessionsDir = getSessionsDir(config.configPath, project.path);
+              updateMetadata(sessionsDir, session.id, { summary: info.summary });
             }
           } catch {
             // Agent info extraction failed — non-fatal, skip
