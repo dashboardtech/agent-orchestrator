@@ -544,12 +544,7 @@ function createGitHubSCM(): SCM {
       } else if (mergeState === "BLOCKED") {
         blockers.push("Merge is blocked by branch protection");
       } else if (mergeState === "UNSTABLE") {
-        // When !ciPassing the CI section already added a blocker — don't
-        // duplicate.  When ciPassing (e.g. all checks skipped) this is the
-        // fail-closed safety net: GitHub says UNSTABLE but we saw nothing wrong.
-        if (ciPassing) {
-          blockers.push("Required checks are failing");
-        }
+        blockers.push("Required checks are failing");
       }
 
       // Draft
