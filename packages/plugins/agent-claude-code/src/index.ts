@@ -263,7 +263,7 @@ interface JsonlLine {
  */
 async function parseJsonlFileTail(filePath: string, maxBytes = 131_072): Promise<JsonlLine[]> {
   let content: string;
-  let offset = 0;
+  let offset: number;
   try {
     const { size = 0 } = await stat(filePath);
     offset = Math.max(0, size - maxBytes);
@@ -650,9 +650,10 @@ function createClaudeCodeAgent(): Agent {
       const threshold = readyThresholdMs ?? DEFAULT_READY_THRESHOLD_MS;
 
       // Check if process is running first
-      if (!session.runtimeHandle) return { state: "exited" };
+      const exitedAt = new Date();
+      if (!session.runtimeHandle) return { state: "exited", timestamp: exitedAt };
       const running = await this.isProcessRunning(session.runtimeHandle);
-      if (!running) return { state: "exited" };
+      if (!running) return { state: "exited", timestamp: exitedAt };
 
       // Process is running - check JSONL session file for activity
       if (!session.workspacePath) {

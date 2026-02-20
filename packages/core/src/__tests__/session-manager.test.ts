@@ -510,6 +510,68 @@ describe("list", () => {
     expect(agentWithNull.getActivityState).toHaveBeenCalled();
     expect(sessions[0].activity).toBeNull();
   });
+
+  it("updates lastActivityAt when detection timestamp is newer", async () => {
+    const newerTimestamp = new Date(Date.now() + 60_000); // 1 minute in the future
+    const agentWithTimestamp: Agent = {
+      ...mockAgent,
+      getActivityState: vi.fn().mockResolvedValue({ state: "active", timestamp: newerTimestamp }),
+    };
+    const registryWithTimestamp: PluginRegistry = {
+      ...mockRegistry,
+      get: vi.fn().mockImplementation((slot: string) => {
+        if (slot === "runtime") return mockRuntime;
+        if (slot === "agent") return agentWithTimestamp;
+        return null;
+      }),
+    };
+
+    writeMetadata(sessionsDir, "app-1", {
+      worktree: "/tmp",
+      branch: "a",
+      status: "working",
+      project: "my-app",
+      runtimeHandle: JSON.stringify(makeHandle("rt-1")),
+    });
+
+    const sm = createSessionManager({ config, registry: registryWithTimestamp });
+    const sessions = await sm.list();
+
+    expect(sessions[0].activity).toBe("active");
+    // lastActivityAt should be updated to the detection timestamp
+    expect(sessions[0].lastActivityAt).toEqual(newerTimestamp);
+  });
+
+  it("does not downgrade lastActivityAt when detection timestamp is older", async () => {
+    const olderTimestamp = new Date(0); // epoch — definitely older than session creation
+    const agentWithOldTimestamp: Agent = {
+      ...mockAgent,
+      getActivityState: vi.fn().mockResolvedValue({ state: "active", timestamp: olderTimestamp }),
+    };
+    const registryWithOldTimestamp: PluginRegistry = {
+      ...mockRegistry,
+      get: vi.fn().mockImplementation((slot: string) => {
+        if (slot === "runtime") return mockRuntime;
+        if (slot === "agent") return agentWithOldTimestamp;
+        return null;
+      }),
+    };
+
+    writeMetadata(sessionsDir, "app-1", {
+      worktree: "/tmp",
+      branch: "a",
+      status: "working",
+      project: "my-app",
+      runtimeHandle: JSON.stringify(makeHandle("rt-1")),
+    });
+
+    const sm = createSessionManager({ config, registry: registryWithOldTimestamp });
+    const sessions = await sm.list();
+
+    expect(sessions[0].activity).toBe("active");
+    // lastActivityAt should NOT be downgraded to the older detection timestamp
+    expect(sessions[0].lastActivityAt.getTime()).toBeGreaterThan(olderTimestamp.getTime());
+  });
 });
 
 describe("get", () => {

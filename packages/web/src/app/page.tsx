@@ -39,8 +39,9 @@ export default async function Home() {
     const coreSessions = allSessions.filter((s) => !s.id.endsWith("-orchestrator"));
     sessions = coreSessions.map(sessionToDashboard);
 
-    // Enrich metadata (issue labels, agent summaries, issue titles)
-    await enrichSessionsMetadata(coreSessions, sessions, config, registry);
+    // Enrich metadata (issue labels, agent summaries, issue titles) — cap at 3s
+    const metaTimeout = new Promise<void>((resolve) => setTimeout(resolve, 3_000));
+    await Promise.race([enrichSessionsMetadata(coreSessions, sessions, config, registry), metaTimeout]);
 
     // Enrich sessions that have PRs with live SCM data
     // Skip enrichment for terminal sessions (merged, closed, done, terminated)

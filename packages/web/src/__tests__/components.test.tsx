@@ -4,7 +4,43 @@ import { CIBadge, CICheckList } from "@/components/CIBadge";
 import { PRStatus } from "@/components/PRStatus";
 import { SessionCard } from "@/components/SessionCard";
 import { AttentionZone } from "@/components/AttentionZone";
+import { ActivityDot } from "@/components/ActivityDot";
 import { makeSession, makePR } from "./helpers";
+
+// ── ActivityDot ───────────────────────────────────────────────────────
+
+describe("ActivityDot", () => {
+  it("renders label pill with activity name", () => {
+    render(<ActivityDot activity="active" />);
+    expect(screen.getByText("active")).toBeInTheDocument();
+  });
+
+  it("renders all known activity states", () => {
+    const states = ["active", "ready", "idle", "waiting_input", "blocked", "exited"] as const;
+    for (const state of states) {
+      const { unmount } = render(<ActivityDot activity={state} />);
+      const expected = state === "waiting_input" ? "waiting" : state;
+      expect(screen.getByText(expected)).toBeInTheDocument();
+      unmount();
+    }
+  });
+
+  it("renders unknown activity state with raw label", () => {
+    render(<ActivityDot activity="some_future_state" />);
+    expect(screen.getByText("some_future_state")).toBeInTheDocument();
+  });
+
+  it("renders null activity with 'unknown' label", () => {
+    render(<ActivityDot activity={null} />);
+    expect(screen.getByText("unknown")).toBeInTheDocument();
+  });
+
+  it("renders only a dot in dotOnly mode (no label)", () => {
+    render(<ActivityDot activity="active" dotOnly />);
+    // No label text should appear in dotOnly mode
+    expect(screen.queryByText("active")).not.toBeInTheDocument();
+  });
+});
 
 // ── CIBadge ──────────────────────────────────────────────────────────
 

@@ -44,7 +44,9 @@ function humanizeStatus(status: string): string {
 }
 
 function relativeTime(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime();
+  const ms = new Date(iso).getTime();
+  if (!iso || isNaN(ms)) return "unknown";
+  const diff = Date.now() - ms;
   const seconds = Math.floor(diff / 1000);
   if (seconds < 60) return "just now";
   const minutes = Math.floor(seconds / 60);
@@ -86,7 +88,7 @@ async function askAgentToFix(
   try {
     const { title, description } = cleanBugbotComment(comment.body);
     const message = `Please address this review comment:\n\nFile: ${comment.path}\nComment: ${title}\nDescription: ${description}\n\nComment URL: ${comment.url}\n\nAfter fixing, mark the comment as resolved at ${comment.url}`;
-    const res = await fetch(`/api/sessions/${sessionId}/message`, {
+    const res = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}/message`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ message }),
@@ -428,6 +430,7 @@ function PRCard({ pr, sessionId }: { pr: DashboardPR; sessionId: string }) {
   useEffect(() => {
     return () => {
       timersRef.current.forEach((timer) => clearTimeout(timer));
+      timersRef.current.clear();
     };
   }, []);
 

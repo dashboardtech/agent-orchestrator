@@ -119,9 +119,10 @@ function createAiderAgent(): Agent {
       const threshold = readyThresholdMs ?? DEFAULT_READY_THRESHOLD_MS;
 
       // Check if process is running first
-      if (!session.runtimeHandle) return { state: "exited" };
+      const exitedAt = new Date();
+      if (!session.runtimeHandle) return { state: "exited", timestamp: exitedAt };
       const running = await this.isProcessRunning(session.runtimeHandle);
-      if (!running) return { state: "exited" };
+      if (!running) return { state: "exited", timestamp: exitedAt };
 
       // Process is running - check for activity signals
       if (!session.workspacePath) return null;
