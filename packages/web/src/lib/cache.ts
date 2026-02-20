@@ -86,9 +86,9 @@ export interface PREnrichmentData {
   title: string;
   additions: number;
   deletions: number;
-  ciStatus: string;
-  ciChecks: Array<{ name: string; status: string; url?: string }>;
-  reviewDecision: string;
+  ciStatus: "none" | "pending" | "passing" | "failing";
+  ciChecks: Array<{ name: string; status: "pending" | "running" | "passed" | "failed" | "skipped"; url?: string }>;
+  reviewDecision: "none" | "pending" | "approved" | "changes_requested";
   mergeability: {
     mergeable: boolean;
     ciPassing: boolean;

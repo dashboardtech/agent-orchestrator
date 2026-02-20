@@ -119,13 +119,9 @@ export async function enrichSessionPR(
     dashboard.pr.title = cached.title;
     dashboard.pr.additions = cached.additions;
     dashboard.pr.deletions = cached.deletions;
-    dashboard.pr.ciStatus = cached.ciStatus as "none" | "pending" | "passing" | "failing";
-    dashboard.pr.ciChecks = cached.ciChecks as DashboardPR["ciChecks"];
-    dashboard.pr.reviewDecision = cached.reviewDecision as
-      | "none"
-      | "pending"
-      | "approved"
-      | "changes_requested";
+    dashboard.pr.ciStatus = cached.ciStatus;
+    dashboard.pr.ciChecks = cached.ciChecks;
+    dashboard.pr.reviewDecision = cached.reviewDecision;
     dashboard.pr.mergeability = cached.mergeability;
     dashboard.pr.unresolvedThreads = cached.unresolvedThreads;
     dashboard.pr.unresolvedComments = cached.unresolvedComments;
