@@ -347,6 +347,43 @@ describe("spawn", () => {
     expect(session.branch).toMatch(/^session\/app-\d+$/);
     expect(session.branch).not.toBe("main");
   });
+
+  it("sends prompt post-launch when agent.promptDelivery is 'post-launch'", async () => {
+    vi.useFakeTimers();
+    const postLaunchAgent = {
+      ...mockAgent,
+      promptDelivery: "post-launch" as const,
+    };
+    const registryWithPostLaunch: PluginRegistry = {
+      ...mockRegistry,
+      get: vi.fn().mockImplementation((slot: string) => {
+        if (slot === "runtime") return mockRuntime;
+        if (slot === "agent") return postLaunchAgent;
+        if (slot === "workspace") return mockWorkspace;
+        return null;
+      }),
+    };
+
+    const sm = createSessionManager({ config, registry: registryWithPostLaunch });
+    const spawnPromise = sm.spawn({ projectId: "my-app", prompt: "Fix the bug" });
+    await vi.advanceTimersByTimeAsync(5_000);
+    await spawnPromise;
+
+    // Prompt should be sent via runtime.sendMessage, not included in launch command
+    expect(mockRuntime.sendMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ id: expect.any(String) }),
+      expect.stringContaining("Fix the bug"),
+    );
+    vi.useRealTimers();
+  });
+
+  it("does not send prompt post-launch when agent.promptDelivery is not set", async () => {
+    const sm = createSessionManager({ config, registry: mockRegistry });
+    await sm.spawn({ projectId: "my-app", prompt: "Fix the bug" });
+
+    // Default agent (no promptDelivery) should NOT trigger sendMessage for prompt
+    expect(mockRuntime.sendMessage).not.toHaveBeenCalled();
+  });
 });
 
 describe("list", () => {
