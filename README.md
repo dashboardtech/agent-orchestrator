@@ -19,7 +19,7 @@ Agent Orchestrator manages fleets of AI coding agents working in parallel on you
 
 <div align="center">
 
-### See it in action
+## See it in action
 
 <a href="https://x.com/agent_wrapper/status/2026329204405723180">
   <img src="docs/assets/demo-video-tweet.png" alt="Agent Orchestrator demo — AI agents building their own orchestrator" width="560">
