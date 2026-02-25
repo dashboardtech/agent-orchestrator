@@ -13,7 +13,7 @@
   </defs>
   <rect width="280" height="48" rx="10" fill="url(#bg)"/>
   <rect width="280" height="48" rx="10" fill="url(#shine)"/>
-  <rect x="0.5" y="0.5" width="279" height="47" rx="9.5" fill="none" stroke="#FFFFFF" stroke-opacity="0.15"/>
+  <rect x="0.5" y="0.5" width="279" height="47" rx="9.5" fill="none" stroke="none"/>
   <!-- Play icon -->
   <polygon points="28,16 28,32 40,24" fill="#FFFFFF"/>
   <!-- Text -->

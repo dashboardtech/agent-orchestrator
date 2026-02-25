@@ -13,7 +13,7 @@
   </defs>
   <rect width="296" height="48" rx="10" fill="url(#bg)"/>
   <rect width="296" height="48" rx="10" fill="url(#shine)"/>
-  <rect x="0.5" y="0.5" width="295" height="47" rx="9.5" fill="none" stroke="#FFFFFF" stroke-opacity="0.15"/>
+  <rect x="0.5" y="0.5" width="295" height="47" rx="9.5" fill="none" stroke="none"/>
   <!-- Book icon -->
   <g transform="translate(22, 14)" fill="#FFFFFF">
     <path d="M0,2 C0,0.9 0.9,0 2,0 L8,0 C9.1,0 10,0.5 10,1.5 L10,18 C10,17 9.1,16.5 8,16.5 L2,16.5 C0.9,16.5 0,17.4 0,18.5 Z"/>
