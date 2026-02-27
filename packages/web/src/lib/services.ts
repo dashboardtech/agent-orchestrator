@@ -20,6 +20,7 @@ import {
   type SCM,
   type ProjectConfig,
 } from "@composio/ao-core";
+import { startLifecyclePoller } from "./lifecycle-poller";
 
 // Static plugin imports — webpack needs these to be string literals
 import pluginRuntimeTmux from "@composio/ao-plugin-runtime-tmux";
@@ -73,6 +74,10 @@ async function initServices(): Promise<Services> {
 
   const services = { config, registry, sessionManager };
   globalForServices._aoServices = services;
+
+  // Start lifecycle poller to update session states every 10 seconds
+  startLifecyclePoller(config, registry, sessionManager, 10_000);
+
   return services;
 }
 
